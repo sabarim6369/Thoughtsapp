@@ -1,51 +1,82 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, ScrollView } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from "react-native";
+import axios from "axios";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
-import Icon from "react-native-vector-icons/Ionicons";
+import API_URL from "../../api";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Profile() {
-    const [friends, setFriends] = useState([
-        { id: '1', name: 'John Doe', profilePic: 'https://randomuser.me/api/portraits/men/1.jpg' },
-        { id: '2', name: 'Jane Smith', profilePic: 'https://randomuser.me/api/portraits/women/1.jpg' },
-        { id: '3', name: 'Alice Brown', profilePic: 'https://randomuser.me/api/portraits/men/2.jpg' },
-        { id: '4', name: 'Chris Evans', profilePic: 'https://randomuser.me/api/portraits/men/3.jpg' },
-    ]);
+    const [friends, setFriends] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [activeTab, setActiveTab] = useState("Friends");
+    const [userId, setUserId] = useState(null);
+    const[userdata,setuserdata]=useState();
 
-    const [user, setUser] = useState({
+    const user = {
         name: "Sabari",
         bio: "Software Developer | Tech Enthusiast",
         profilePic: "https://randomuser.me/api/portraits/men/4.jpg",
         followersCount: 1200,
         followingCount: 850,
-    });
+        Friends:2
+    };
 
-    const [activeTab, setActiveTab] = useState("Friends");
+    useEffect(() => {
+        const fetchUserId = async () => {
+            try {
+                const storedUserId = await AsyncStorage.getItem("userId");
+                if (storedUserId) {
+                    setUserId(storedUserId);
+                }
+            } catch (error) {
+                console.error("Error fetching userId:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchUserId();
+    }, []);
 
-    const renderFriends = () => (
+    useEffect(() => {
+        if (userId) {
+            fetchFriends();
+        }
+    }, [userId]);
+
+    const fetchFriends = async () => {
+        try {
+            const response = await axios.get(`${API_URL}/friend/list/${userId}`);
+            setFriends(response.data.friends || []);
+            setuserdata(response.data.user);
+
+        } catch (err) {
+            setError("Failed to fetch data. Please try again.");
+            Alert.alert("Error", "Unable to fetch data from server");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const renderFriendsList = () => (
         <FlatList
             data={friends}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item) => item._id.toString()}
             renderItem={({ item }) => (
-                <View style={styles.friendCard}>
-                    <Image source={{ uri: item.profilePic }} style={styles.friendPic} />
-                    <Text style={styles.friendName}>{item.name}</Text>
+                <View style={styles.card}>
+                    <Image 
+                        source={{ uri: item.profilePic || "https://cdn-icons-png.flaticon.com/512/149/149071.png" }} 
+                        style={styles.friendPic} 
+                    />
+                    <Text style={styles.friendName}>{item.username}</Text>
                 </View>
             )}
         />
     );
 
-    const renderMessages = () => (
-        <FlatList
-            data={friends}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-                <View style={styles.messageCard}>
-                    <Image source={{ uri: item.profilePic }} style={styles.friendPic} />
-                    <Text style={styles.friendName}>{item.name}</Text>
-                </View>
-            )}
-        />
-    );
+    if (loading) {
+        return <ActivityIndicator size="large" color="#007bff" style={styles.loader} />;
+    }
 
     return (
         <View style={styles.container}>
@@ -53,11 +84,10 @@ export default function Profile() {
             <View style={styles.profileHeader}>
                 <Image source={{ uri: user.profilePic }} style={styles.profilePic} />
                 <View style={styles.profileInfo}>
-                    <Text style={styles.username}>{user.name}</Text>
+                    <Text style={styles.username}>{userdata?.username}</Text>
                     <Text style={styles.bio}>{user.bio}</Text>
-                    <View style={styles.followerInfo}>
-                        <Text style={styles.followerCount}>{user.followersCount} Followers</Text>
-                        <Text style={styles.followingCount}>{user.followingCount} Following</Text>
+                    <View style={styles.followerContainer}>
+                        <Text style={styles.followerCount}>Friends:{userdata?.friends.length}</Text>
                     </View>
                     <TouchableOpacity style={styles.editButton}>
                         <Text style={styles.editButtonText}>Edit Profile</Text>
@@ -70,14 +100,11 @@ export default function Profile() {
                 <TouchableOpacity onPress={() => setActiveTab("Friends")} style={[styles.tabButton, activeTab === "Friends" && styles.activeTab]}>
                     <Text style={[styles.tabText, activeTab === "Friends" && styles.activeTabText]}>Friends</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => setActiveTab("Messages")} style={[styles.tabButton, activeTab === "Messages" && styles.activeTab]}>
-                    <Text style={[styles.tabText, activeTab === "Messages" && styles.activeTabText]}>Messages</Text>
-                </TouchableOpacity>
             </View>
 
             {/* Tab Content */}
             <ScrollView style={styles.tabContent}>
-                {activeTab === "Friends" ? renderFriends() : renderMessages()}
+                {activeTab === "Friends" && renderFriendsList()}
             </ScrollView>
         </View>
     );
@@ -86,14 +113,25 @@ export default function Profile() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#fff",
+        backgroundColor: "#f8f9fa",
         paddingTop: hp("5%"),
-        paddingHorizontal: wp("5%"),
+    },
+    loader: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
     },
     profileHeader: {
+        backgroundColor: "#fff",
+        padding: hp("3%"),
+        borderRadius: 15,
         flexDirection: "row",
-        marginBottom: hp("3%"),
         alignItems: "center",
+        marginHorizontal: wp("5%"),
+        elevation: 5,
+        shadowColor: "#000",
+        shadowOpacity: 0.1,
+        shadowRadius: 5,
     },
     profilePic: {
         width: wp("20%"),
@@ -114,14 +152,15 @@ const styles = StyleSheet.create({
         color: "#666",
         marginTop: hp("1%"),
     },
-    followerInfo: {
+    followerContainer: {
         flexDirection: "row",
         marginTop: hp("1%"),
+        justifyContent: "space-between",
+        width: "70%",
     },
     followerCount: {
         fontSize: wp("4%"),
         color: "#007bff",
-        marginRight: wp("5%"),
     },
     followingCount: {
         fontSize: wp("4%"),
@@ -129,27 +168,26 @@ const styles = StyleSheet.create({
     },
     editButton: {
         marginTop: hp("2%"),
-        paddingVertical: hp("1%"),
-        backgroundColor: "#f0f0f0",
-        borderRadius: 10,
+        paddingVertical: hp("1.2%"),
+        backgroundColor: "#007bff",
+        borderRadius: 8,
         alignItems: "center",
     },
     editButtonText: {
-        color: "#007bff",
+        color: "#fff",
         fontSize: wp("4%"),
         fontWeight: "bold",
     },
     tabBar: {
         flexDirection: "row",
-        justifyContent: "space-around",
-        marginTop: hp("3%"),
-        marginBottom: hp("2%"),
+        justifyContent: "center",
+        marginVertical: hp("3%"),
     },
     tabButton: {
-        paddingVertical: hp("1%"),
-        paddingHorizontal: wp("5%"),
+        paddingVertical: hp("1.5%"),
+        paddingHorizontal: wp("8%"),
         borderRadius: 10,
-        backgroundColor: "#f0f0f0",
+        backgroundColor: "#e9ecef",
     },
     activeTab: {
         backgroundColor: "#007bff",
@@ -164,15 +202,14 @@ const styles = StyleSheet.create({
     tabContent: {
         flex: 1,
     },
-    friendCard: {
+    card: {
         flexDirection: "row",
         alignItems: "center",
-        marginBottom: hp("2%"),
-    },
-    messageCard: {
-        flexDirection: "row",
-        alignItems: "center",
-        marginBottom: hp("2%"),
+        padding: hp("2%"),
+        backgroundColor: "#fff",
+        marginHorizontal: wp("5%"),
+        borderRadius: 10,
+        elevation: 2,
     },
     friendPic: {
         width: wp("12%"),
@@ -181,7 +218,7 @@ const styles = StyleSheet.create({
         marginRight: wp("4%"),
     },
     friendName: {
-        fontSize: wp("4%"),
+        fontSize: wp("4.5%"),
         color: "#333",
     },
 });

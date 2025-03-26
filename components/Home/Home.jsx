@@ -50,16 +50,33 @@ useEffect(() => {
 }, [userId, loadingUserId]);
 
 
-    const handleVote = (pollId, index) => {
-        setSelectedPolls((prev) => {
-            if (prev[pollId] === index) {
-                const updatedPolls = { ...prev };
-                delete updatedPolls[pollId];
-                return updatedPolls;
-            }
-            return { ...prev, [pollId]: index };
+const handleVote = async (pollId, index) => {
+    if (!userId) {
+        alert("User ID not found!");
+        return;
+    }
+
+    if (selectedPolls[pollId] !== undefined) {
+        alert("You have already voted on this poll.");
+        return;
+    }
+
+    try {
+        const response = await axios.post(`${API_URL}/poll/vote`, {
+            pollId,
+            userId,
+            optionIndex: index
         });
-    };
+
+        if (response.status === 200) {
+            setSelectedPolls(prev => ({ ...prev, [pollId]: index }));
+        }
+    } catch (error) {
+        console.error("Voting error:", error);
+        alert(error.response?.data?.message || "Failed to submit vote. Please try again.");
+    }
+};
+
   
 const handleFriendRequest = (friendId) => {
     axios.post(`${API_URL}/friend/sendRequest`, { senderId: userId, receiverId: friendId })
@@ -95,74 +112,60 @@ const handleFriendRequest = (friendId) => {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.pollList}
             renderItem={({ item }) => {
-              const isFriend = friendList.includes(item.userId);
-
-              return (
-                <View style={styles.card}>
-                  <View style={styles.profileRow}>
-                    <Image
-                      source={{ uri: item.profileImage }}
-                      style={styles.profileImage}
-                    />
-                    <Text style={styles.userName}>{item.user}</Text>
-                  </View>
-                  <Text style={styles.question}>{item.question}</Text>
-
-                  {item.options.map((option, index) => {
-                    const isSelected = selectedPolls[item.id] === index;
-                    return (
-                      <TouchableOpacity
-                        key={index}
-                        style={[
-                          styles.optionButton,
-                          isSelected ? styles.selectedOption : null,
-                        ]}
-                        onPress={() => handleVote(item.id, index)}
-                      >
-                        <Text
-                          style={[
-                            styles.optionText,
-                            isSelected && styles.selectedOptionText,
-                          ]}
-                        >
-                          {option.text}{" "}
-                          {/* Render the text property of the option */}
-                          {selectedPolls[item.id] !== undefined
-                            ? `(${option.votes}%)` // Access the votes property of the option
-                            : ""}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                  <View style={styles.actionIcons}>
-                    <TouchableOpacity
-                      onPress={() =>
-                        console.log(`Sharing poll: ${item.question}`)
-                      }
-                      style={styles.iconSpacing}
-                    >
-                      <Icon
-                        name="share-social-outline"
-                        size={24}
-                        color="#007bff"
-                      />
-                    </TouchableOpacity>
-
-                    {!isFriend && (
-                      <TouchableOpacity
-                        onPress={() => handleFriendRequest(item.userid)}
-                      >
-                        <Icon
-                          name="person-add-outline"
-                          size={24}
-                          color="#007bff"
-                        />
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                </View>
-              );
+                const isFriend = friendList.includes(item.userId);
+                const totalVotes = item.options.reduce((acc, option) => acc + option.votes, 0) || 1; // Avoid division by zero
+            
+                return (
+                    <View style={styles.card}>
+                        <View style={styles.profileRow}>
+                            <Image source={{ uri: item.profileImage }} style={styles.profileImage} />
+                            <Text style={styles.userName}>{item.user}</Text>
+                        </View>
+                        <Text style={styles.question}>{item.question}</Text>
+            
+                        {item.options.map((option, index) => {
+                            const isSelected = selectedPolls[item.id] === index || option.marked;
+                            const votePercentage = totalVotes > 1 ? ((option.votes / totalVotes) * 100).toFixed(1) : null;
+                            
+                            return (
+                              <TouchableOpacity
+                                key={index}
+                                style={[
+                                  styles.optionButton,
+                                  isSelected ? styles.selectedOption : null,
+                                ]}
+                                onPress={() => handleVote(item.id, index)}
+                                disabled={option.marked} // Prevent re-voting if already marked
+                              >
+                                <Text
+                                  style={[
+                                    styles.optionText,
+                                    isSelected
+                                      ? styles.selectedOptionText
+                                      : styles.unselectedOptionText,
+                                  ]}
+                                >
+                                  {option.text} {option.marked && " ✔"}
+                                </Text>
+                              </TouchableOpacity>
+                            );
+                        })}
+            
+                        <View style={styles.actionIcons}>
+                            <TouchableOpacity onPress={() => console.log(`Sharing poll: ${item.question}`)} style={styles.iconSpacing}>
+                                <Icon name="share-social-outline" size={24} color="#007bff" />
+                            </TouchableOpacity>
+            
+                            {!isFriend && (
+                                <TouchableOpacity onPress={() => handleFriendRequest(item.userid)}>
+                                    <Icon name="person-add-outline" size={24} color="#007bff" />
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                    </View>
+                );
             }}
+            
           />
         )}
       </View>
@@ -260,6 +263,9 @@ const styles = StyleSheet.create({
     
     iconSpacing: {
         marginRight: 10, 
+    },
+    unselectedOptionText: {
+        color: "rgba(0, 123, 255, 0.5)", // Light blue for unselected options
     },
     
     
