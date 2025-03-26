@@ -6,15 +6,40 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from "react-native";
-import { Picker } from "@react-native-picker/picker";
 import { Ionicons } from "@expo/vector-icons";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
 import { LinearGradient } from "expo-linear-gradient";
+import API_URL from "../../api";
+import axios from "axios";  // Import axios to make API requests
 
-export default function Signup({navigation}) {
+export default function Signup({ navigation }) {
   const [passwordVisible, setPasswordVisible] = useState(false);
-  const [selectedCode, setSelectedCode] = useState("+91");
-  const [phoneNumber, setPhoneNumber] = useState("");
+  const [username, setUsername] = useState(""); // Add state for username
+  const [email, setEmail] = useState(""); // Add state for email
+  const [dob, setDob] = useState(""); // Add state for date of birth
+  const [phoneNumber, setPhoneNumber] = useState(""); // Add state for phone number
+  const [password, setPassword] = useState(""); // Add state for password
+
+  const handleSubmit = async () => {
+    try {
+      // Sending user details to the backend API
+      const response = await axios.post(`${API_URL}/auth/signup`, {
+        username,
+        email,
+        password,
+        phoneNumber,
+        dob,
+      });
+
+      if (response.status === 201) {
+        alert("User created successfully!");
+        navigation.navigate("Login"); // Navigate to login page on success
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Error signing up. Please try again.");
+    }
+  };
 
   return (
     <LinearGradient
@@ -35,27 +60,30 @@ export default function Signup({navigation}) {
           </TouchableOpacity>
 
           <Text style={styles.label}>Full Name</Text>
-          <TextInput style={styles.input} />
+          <TextInput
+            style={styles.input}
+            value={username}
+            onChangeText={setUsername}
+          />
 
           <Text style={styles.label}>Email</Text>
-          <TextInput style={styles.input} keyboardType="email-address" />
+          <TextInput
+            style={styles.input}
+            keyboardType="email-address"
+            value={email}
+            onChangeText={setEmail}
+          />
 
           <Text style={styles.label}>Date of Birth</Text>
-          <TextInput style={styles.input} />
+          <TextInput
+            style={styles.input}
+            value={dob}
+            onChangeText={setDob}
+            placeholder="YYYY-MM-DD"
+          />
 
           <Text style={styles.label}>Phone Number</Text>
           <View style={styles.phoneContainer}>
-            {/* <Picker
-            selectedValue={selectedCode}
-            style={styles.picker}
-            onValueChange={(itemValue) => setSelectedCode(itemValue)}
-          >
-            <Picker.Item label="+91" value="+91" />
-            <Picker.Item label="+90" value="+90" />
-            <Picker.Item label="+1" value="+1" />
-            <Picker.Item label="+44" value="+44" />
-            <Picker.Item label="+61" value="+61" />
-          </Picker> */}
             <TextInput
               style={styles.phoneInput}
               keyboardType="phone-pad"
@@ -69,6 +97,8 @@ export default function Signup({navigation}) {
             <TextInput
               style={styles.passwordInput}
               secureTextEntry={!passwordVisible}
+              value={password}
+              onChangeText={setPassword}
             />
             <TouchableOpacity
               onPress={() => setPasswordVisible(!passwordVisible)}
@@ -81,7 +111,7 @@ export default function Signup({navigation}) {
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity style={styles.button}>
+          <TouchableOpacity style={styles.button} onPress={handleSubmit}>
             <Text style={styles.buttonText}>Register</Text>
           </TouchableOpacity>
         </View>
@@ -99,12 +129,11 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: "#fff",
     borderRadius: wp("3%"),
-    paddingVertical: wp("3%"), 
+    paddingVertical: wp("3%"),
     paddingHorizontal: wp("5%"),
-    width: wp("85%"), 
-    alignSelf: "center", 
+    width: wp("85%"),
+    alignSelf: "center",
   },
-
   title: {
     fontSize: wp("9%"),
     fontWeight: "bold",
@@ -138,11 +167,6 @@ const styles = StyleSheet.create({
     borderColor: "#ccc",
     borderRadius: wp("2%"),
     marginTop: hp("0.5%"),
-  },
-  picker: {
-    width: wp("20%"),
-    height: hp("6%"),
-    backgroundColor: "#e1d8d8",
   },
   phoneInput: {
     flex: 1,

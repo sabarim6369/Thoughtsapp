@@ -1,37 +1,54 @@
-import React, { useState } from "react";
+import React, { useState,useEffect} from "react";
 import { View, Text, StyleSheet, Image, TouchableOpacity, FlatList } from "react-native";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
-import Icon from "react-native-vector-icons/Ionicons"; // Import icon
+import Icon from "react-native-vector-icons/Ionicons"; 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import API_URL from "../../api";
+import axios from "axios";
 
-const polls = [
-    {
-        id: "1",
-        user: "Abigail",
-        question: "Which is the ultimate weekend vibe?",
-        options: ["Beach time", "Netflix & Chill", "Hiking Adventure"],
-        votes: [40, 30, 30], // Example poll percentages
-        profileImage: "https://randomuser.me/api/portraits/women/1.jpg",
-    },
-    {
-        id: "2",
-        user: "John",
-        question: "What's your favorite pet?",
-        options: ["Dog", "Cat", "Rabbit"],
-        votes: [50, 40, 10],
-        profileImage: "https://randomuser.me/api/portraits/men/1.jpg",
-    },
-    {
-        id: "3",
-        user: "Emma",
-        question: "Best morning drink?",
-        options: ["Coffee", "Tea", "Juice"],
-        votes: [60, 25, 15],
-        profileImage: "https://randomuser.me/api/portraits/women/2.jpg",
-    },
-];
 
 export default function Home() {
     const [selectedPolls, setSelectedPolls] = useState({}); // Store selected options
+        const [userId, setUserId] = useState(null);
+        const [loadingUserId, setLoadingUserId] = useState(true); 
+        const [polls1, setPolls1] = useState([]);
+        const [friendList, setFriendList] = useState([]);
+
+ useEffect(() => {
+    const fetchUserId = async () => {
+        try {
+            const storedUserId = await AsyncStorage.getItem('userId');
+            console.log(storedUserId)
+            if (storedUserId) {
+                setUserId(storedUserId);  
+            }
+        } catch (error) {
+            console.error('Error fetching userId from AsyncStorage:', error);
+        } finally {
+            setLoadingUserId(false);  
+        }
+    };
+
+    fetchUserId();
+}, []);  
+useEffect(() => {
+    console.log("UserId:", userId);
+    console.log("Loading UserId:", loadingUserId);
+    
+    if (!loadingUserId && userId) {
+        console.log("Making API request...");
+        axios
+            .get(`${API_URL}/poll/getallPolls/${userId}`)
+            .then((response) => {
+                console.log("API Response:", response.data);
+                setPolls1(response.data);
+            })
+            .catch((error) => {
+                console.error("API Error:", error);
+            });
+    }
+}, [userId, loadingUserId]);
+
 
     const handleVote = (pollId, index) => {
         setSelectedPolls((prev) => {
@@ -43,63 +60,112 @@ export default function Home() {
             return { ...prev, [pollId]: index };
         });
     };
+  
+const handleFriendRequest = (friendId) => {
+    axios.post(`${API_URL}/friend/sendRequest`, { senderId: userId, receiverId: friendId })
+        .then(response => {
+            alert(response.data.message); // Show the success message
+            setFriendList([...friendList, friendId]);
+        })
+        .catch(error => {
+            if (error.response) {
+                alert(error.response.data.message); // Show the backend error message
+            } else {
+                alert("Something went wrong. Please try again.");
+            }
+        });
+};
 
     return (
-        <View style={styles.container}>
-            <View style={styles.header}>
-                <Image source={require("../../assets/download.png")} style={styles.logo} />
-            </View>
-
-            <FlatList
-                data={polls}
-                keyExtractor={(item) => item.id}
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.pollList}
-                renderItem={({ item }) => (
-                    <View style={styles.card}>
-                        {/* User Info */}
-                        <View style={styles.profileRow}>
-                            <Image source={{ uri: item.profileImage }} style={styles.profileImage} />
-                            <Text style={styles.userName}>{item.user}</Text>
-                        </View>
-                        <Text style={styles.question}>{item.question}</Text>
-
-                        {/* Poll Options */}
-                        {item.options.map((option, index) => {
-                            const isSelected = selectedPolls[item.id] === index;
-                            return (
-                              <TouchableOpacity
-                                key={index}
-                                style={[
-                                  styles.optionButton,
-                                  isSelected ? styles.selectedOption : null,
-                                ]}
-                                onPress={() => handleVote(item.id, index)}
-                              >
-                                <Text
-                                  style={[
-                                    styles.optionText,
-                                    isSelected && styles.selectedOptionText,
-                                  ]}
-                                >
-                                  {option}{" "}
-                                  {selectedPolls[item.id] !== undefined
-                                    ? `(${item.votes[index]}%)`
-                                    : ""}
-                                </Text>
-                              </TouchableOpacity>
-                            );
-                        })}
-                          <View style={styles.shareContainer}>
-                <TouchableOpacity onPress={() => console.log(`Sharing poll: ${item.question}`)}>
-                <Icon name="share" size={24} color="#007bff" />
-                    </TouchableOpacity>
-            </View>
-                    </View>
-                    
-                )}
-            />
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Image
+            source={require("../../assets/download.png")}
+            style={styles.logo}
+          />
         </View>
+        {loadingUserId ? (
+          <Text>Loading...</Text> // Show this if still loading user data
+        ) : polls1.length === 0 ? (
+          <Text>No polls available</Text> // Show this if no polls are found
+        ) : (
+          <FlatList
+            data={polls1}
+            keyExtractor={(item) => item.id}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.pollList}
+            renderItem={({ item }) => {
+              const isFriend = friendList.includes(item.userId);
+
+              return (
+                <View style={styles.card}>
+                  <View style={styles.profileRow}>
+                    <Image
+                      source={{ uri: item.profileImage }}
+                      style={styles.profileImage}
+                    />
+                    <Text style={styles.userName}>{item.user}</Text>
+                  </View>
+                  <Text style={styles.question}>{item.question}</Text>
+
+                  {item.options.map((option, index) => {
+                    const isSelected = selectedPolls[item.id] === index;
+                    return (
+                      <TouchableOpacity
+                        key={index}
+                        style={[
+                          styles.optionButton,
+                          isSelected ? styles.selectedOption : null,
+                        ]}
+                        onPress={() => handleVote(item.id, index)}
+                      >
+                        <Text
+                          style={[
+                            styles.optionText,
+                            isSelected && styles.selectedOptionText,
+                          ]}
+                        >
+                          {option.text}{" "}
+                          {/* Render the text property of the option */}
+                          {selectedPolls[item.id] !== undefined
+                            ? `(${option.votes}%)` // Access the votes property of the option
+                            : ""}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                  <View style={styles.actionIcons}>
+                    <TouchableOpacity
+                      onPress={() =>
+                        console.log(`Sharing poll: ${item.question}`)
+                      }
+                      style={styles.iconSpacing}
+                    >
+                      <Icon
+                        name="share-social-outline"
+                        size={24}
+                        color="#007bff"
+                      />
+                    </TouchableOpacity>
+
+                    {!isFriend && (
+                      <TouchableOpacity
+                        onPress={() => handleFriendRequest(item.userid)}
+                      >
+                        <Icon
+                          name="person-add-outline"
+                          size={24}
+                          color="#007bff"
+                        />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </View>
+              );
+            }}
+          />
+        )}
+      </View>
     );
 }
 
@@ -176,5 +242,25 @@ const styles = StyleSheet.create({
         justifyContent: "flex-end",
         marginTop: hp("1%"),
     },
+    friendRequestButton: { backgroundColor: "#007bff", padding: 10, borderRadius: 5, alignItems: "center", marginTop: 10 },
+    friendRequestText: { color: "#fff", fontSize: 14, fontWeight: "bold" },
+    friendRequestIcon: {
+        position: "absolute",
+        top: 10,
+        right: 10, 
+    },
+    
+    actionIcons: {
+        flexDirection: "row",
+        position: "absolute",
+        top: 10,
+        right: 10, 
+        alignItems: "center",
+    },
+    
+    iconSpacing: {
+        marginRight: 10, 
+    },
+    
     
 });

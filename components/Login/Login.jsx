@@ -9,10 +9,37 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
 import { LinearGradient } from "expo-linear-gradient";
-import Footer from "../Footer";
+import API_URL from "../../api";
+import axios from "axios";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 export default function Login({navigation}) {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const handleLogin = async () => {
+    try {
+      const response = await axios.post(`${API_URL}/auth/login`, {
+        email,
+        password,
+      });
+
+      if (response.status === 200) {
+        const { token, userId } = response.data;
+        await AsyncStorage.setItem('token', token);
+        await AsyncStorage.setItem('userId', userId.toString());
+        console.log('Login successful, token:', token, 'userId:', userId);
+        setEmail("");
+        setPassword("");
+        navigation.navigate("Home");
+      }
+    } catch (error) {
+      console.error('Login error:', error.response ? error.response.data : error.message);
+      // Handle login failure (e.g., show an alert)
+    }
+  };
+
 
   return (
     <LinearGradient colors={["#07F2DF", "#458FD0"]} style={styles.container}>
@@ -29,13 +56,16 @@ export default function Login({navigation}) {
         </TouchableOpacity>
 
         <Text style={styles.label}>Email</Text>
-        <TextInput style={styles.input} keyboardType="email-address" />
+        <TextInput style={styles.input} keyboardType="email-address"     value={email}
+          onChangeText={setEmail} />
 
         <Text style={styles.label}>Password</Text>
         <View style={styles.passwordContainer}>
           <TextInput
             style={styles.passwordInput}
             secureTextEntry={!passwordVisible}
+            value={password}
+            onChangeText={setPassword} 
           />
           <TouchableOpacity
             onPress={() => setPasswordVisible(!passwordVisible)}
@@ -61,7 +91,7 @@ export default function Login({navigation}) {
         </View>
 
         {/* Login Button */}
-        <TouchableOpacity style={styles.button} onPress={()=>navigation.navigate("Home")}>
+        <TouchableOpacity style={styles.button} onPress={handleLogin}>
           <Text style={styles.buttonText}>Login</Text>
         </TouchableOpacity>
       </View>
