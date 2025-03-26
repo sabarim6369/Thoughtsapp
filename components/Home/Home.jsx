@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
         marginRight: 10, 
     },
     unselectedOptionText: {
-        color: "rgba(0, 123, 255, 0.5)", // Light blue for unselected options
+        color: "rgba(0, 123, 255, 0.5)",
     },
     
     

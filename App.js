@@ -1,6 +1,11 @@
 import { StatusBar } from "expo-status-bar";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import {jwtDecode} from "jwt-decode";
+import { useEffect, useState } from "react";
+import { View, ActivityIndicator } from "react-native";
+
 import Footer from "./components/Footer";
 import Login from "./components/Login/Login";
 import Signup from "./components/Signup/Signup";
@@ -8,7 +13,6 @@ import Home from "./components/Home/Home";
 import Mypolls from "./components/MyPolls/Mypolls";
 import Notifications from "./components/Notification/Notification";
 import Profile from "./components/Profile/Profile";
-import { View } from "react-native";
 
 const Stack = createStackNavigator();
 
@@ -29,6 +33,7 @@ function Mypollswithfooter() {
     </View>
   );
 }
+
 function Notificationswithfooter() {
   return (
     <View style={{ flex: 1 }}>
@@ -37,6 +42,7 @@ function Notificationswithfooter() {
     </View>
   );
 }
+
 function Profilewithfooter() {
   return (
     <View style={{ flex: 1 }}>
@@ -47,9 +53,46 @@ function Profilewithfooter() {
 }
 
 export default function App() {
+  const [initialRoute, setInitialRoute] = useState(null);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const token = await AsyncStorage.getItem("token");
+
+        if (token) {
+          const decodedToken = jwtDecode(token);
+          const currentTime = Date.now() / 1000; // Convert milliseconds to seconds
+
+          if (decodedToken.exp > currentTime) {
+            setInitialRoute("Home");
+          } else {
+            await AsyncStorage.removeItem("token"); // Remove expired token
+            setInitialRoute("Login");
+          }
+        } else {
+          setInitialRoute("Login");
+        }
+      } catch (error) {
+        console.error("Error checking token:", error);
+        setInitialRoute("Login");
+      }
+    };
+
+    checkAuth();
+  }, []);
+
+  if (initialRoute === null) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
+    );
+  }
+
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Login" screenOptions={{ headerShown: false }}>
+      <Stack.Navigator initialRouteName={initialRoute} screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Login" component={Login} />
         <Stack.Screen name="Signup" component={Signup} />
         <Stack.Screen name="Home" component={HomeWithFooter} />

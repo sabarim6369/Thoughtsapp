@@ -23,6 +23,7 @@ export default function Login({navigation}) {
       const response = await axios.post(`${API_URL}/auth/login`, {
         email,
         password,
+        rememberMe
       });
 
       if (response.status === 200) {

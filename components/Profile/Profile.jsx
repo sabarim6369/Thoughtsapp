@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from "react-native";
+import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, ScrollView, ActivityIndicator, Alert,Modal,TextInput,Button} from "react-native";
 import axios from "axios";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
 import API_URL from "../../api";
@@ -12,6 +12,9 @@ export default function Profile() {
     const [activeTab, setActiveTab] = useState("Friends");
     const [userId, setUserId] = useState(null);
     const[userdata,setuserdata]=useState();
+    const [modalVisible, setModalVisible] = useState(false);
+    const [editedUsername, setEditedUsername] = useState("");
+    const [editedbio, seteditedbio] = useState("");
 
     const user = {
         name: "Sabari",
@@ -57,7 +60,30 @@ export default function Profile() {
             setLoading(false);
         }
     };
-
+    const handleSave = async () => {
+        try {
+          const response = await axios.post(
+            `${API_URL}/auth/edit`, // Replace with your actual API URL
+            {
+              username: editedUsername,
+              bio: editedbio,
+              userId:userId
+            }
+          );
+      
+          if (response.status === 200) {
+            setuserdata((prev) => ({
+                ...prev,
+                username: editedUsername || prev.username,
+                bio: editedbio || prev.bio || "No bio",
+              }));
+      
+            setModalVisible(false);
+          }
+        } catch (error) {
+          console.error("Error updating details:", error.response?.data || error.message);
+        }
+      };
     const renderFriendsList = () => (
         <FlatList
             data={friends}
@@ -80,29 +106,54 @@ export default function Profile() {
 
     return (
         <View style={styles.container}>
-            {/* Profile Header */}
             <View style={styles.profileHeader}>
                 <Image source={{ uri: user.profilePic }} style={styles.profilePic} />
                 <View style={styles.profileInfo}>
                     <Text style={styles.username}>{userdata?.username}</Text>
-                    <Text style={styles.bio}>{user.bio}</Text>
+                    <Text style={styles.bio}>{userdata?.bio||"No bio"}</Text>
                     <View style={styles.followerContainer}>
                         <Text style={styles.followerCount}>Friends:{userdata?.friends.length}</Text>
                     </View>
-                    <TouchableOpacity style={styles.editButton}>
+                    <TouchableOpacity style={styles.editButton} onPress={() => setModalVisible(true)}>
                         <Text style={styles.editButtonText}>Edit Profile</Text>
                     </TouchableOpacity>
                 </View>
             </View>
 
-            {/* Tab Navigation */}
             <View style={styles.tabBar}>
                 <TouchableOpacity onPress={() => setActiveTab("Friends")} style={[styles.tabButton, activeTab === "Friends" && styles.activeTab]}>
                     <Text style={[styles.tabText, activeTab === "Friends" && styles.activeTabText]}>Friends</Text>
                 </TouchableOpacity>
             </View>
 
-            {/* Tab Content */}
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={modalVisible}
+                onRequestClose={() => setModalVisible(false)}
+            >
+                <View style={styles.modalContainer}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Edit Profile</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Enter new username"
+                            value={editedUsername}
+                            onChangeText={setEditedUsername}
+                        />
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Enter Bio"
+                            value={editedbio}
+                            onChangeText={seteditedbio}
+                        />
+                        <View style={styles.buttonRow}>
+                            <Button title="Cancel" onPress={() => setModalVisible(false)} color="red" />
+                            <Button title="Save" onPress={handleSave} color="blue" />
+                        </View>
+                    </View>
+                </View>
+            </Modal>
             <ScrollView style={styles.tabContent}>
                 {activeTab === "Friends" && renderFriendsList()}
             </ScrollView>
@@ -220,5 +271,34 @@ const styles = StyleSheet.create({
     friendName: {
         fontSize: wp("4.5%"),
         color: "#333",
+    },
+    modalContainer: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: "rgba(0,0,0,0.5)",
+    },
+    modalContent: {
+        width: "80%",
+        backgroundColor: "#fff",
+        padding: 20,
+        borderRadius: 10,
+        elevation: 5,
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: "bold",
+        marginBottom: 10,
+    },
+    input: {
+        borderWidth: 1,
+        borderColor: "#ccc",
+        borderRadius: 8,
+        padding: 10,
+        marginBottom: 10,
+    },
+    buttonRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
     },
 });
