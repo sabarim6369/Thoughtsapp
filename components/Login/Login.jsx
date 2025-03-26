@@ -91,7 +91,6 @@ export default function Login({navigation}) {
           <Text style={styles.rememberText}>Remember Me</Text>
         </View>
 
-        {/* Login Button */}
         <TouchableOpacity style={styles.button} onPress={handleLogin}>
           <Text style={styles.buttonText}>Login</Text>
         </TouchableOpacity>

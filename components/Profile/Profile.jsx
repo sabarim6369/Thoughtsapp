@@ -124,6 +124,9 @@ export default function Profile() {
                 <TouchableOpacity onPress={() => setActiveTab("Friends")} style={[styles.tabButton, activeTab === "Friends" && styles.activeTab]}>
                     <Text style={[styles.tabText, activeTab === "Friends" && styles.activeTabText]}>Friends</Text>
                 </TouchableOpacity>
+                  <TouchableOpacity onPress={() => setActiveTab("Messages")} style={[styles.tabButton, activeTab === "Messages" && styles.activeTab]}>
+                                    <Text style={[styles.tabText, activeTab === "Messages" && styles.activeTabText]}>Messages</Text>
+                                </TouchableOpacity>
             </View>
 
             <Modal

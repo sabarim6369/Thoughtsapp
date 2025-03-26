@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, ActivityIndicator } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
-import Icon from "react-native-vector-icons/Ionicons"; // Import icon
-import axios from 'axios';
+import Icon from "react-native-vector-icons/Ionicons";
+import axios from "axios";
 import API_URL from "../../api";
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function Mypolls() {
     const [polls, setPolls] = useState([]); 
@@ -12,49 +13,43 @@ export default function Mypolls() {
     const [options, setOptions] = useState(""); 
     const [pollCount, setPollCount] = useState(0);
     const [loading, setLoading] = useState(true);
-    const [loadingUserId, setLoadingUserId] = useState(true); // Track userId loading state
+    const [loadingUserId, setLoadingUserId] = useState(true);
     const [userId, setUserId] = useState(null);
 
-    // Fetch userId from AsyncStorage
     useEffect(() => {
         const fetchUserId = async () => {
             try {
-                const storedUserId = await AsyncStorage.getItem('userId');
+                const storedUserId = await AsyncStorage.getItem("userId");
                 if (storedUserId) {
-                    setUserId(storedUserId);  // Set userId to state
+                    setUserId(storedUserId);
                 }
             } catch (error) {
-                console.error('Error fetching userId from AsyncStorage:', error);
+                console.error("Error fetching userId from AsyncStorage:", error);
             } finally {
-                setLoadingUserId(false);  // Stop loading state once done
+                setLoadingUserId(false);
             }
         };
-
         fetchUserId();
-    }, []); 
+    }, []);
+
     useEffect(() => {
-        if (userId && !loadingUserId) {  
+        if (userId && !loadingUserId) {
             axios.get(`${API_URL}/poll/getPolls/${userId}`)
                 .then(response => {
                     setPolls(response.data);
                     setPollCount(response.data.length);
-                    setLoading(false);  // Stop loading when data is fetched
+                    setLoading(false);
                 })
                 .catch(error => {
                     console.error("Error fetching polls:", error);
-                    setLoading(false);  // Stop loading in case of error
+                    setLoading(false);
                 });
         }
-    }, [userId, loadingUserId]);  // Trigger the effect when userId is set
+    }, [userId, loadingUserId]);
 
-    // Handle poll creation
     const handleCreatePoll = () => {
         if (question && options) {
-            const newPoll = {
-                question,
-                options: options.split(","),
-                userId
-            };
+            const newPoll = { question, options: options.split(","), userId };
             axios.post(`${API_URL}/poll/create`, newPoll)
                 .then(response => {
                     setPolls(prevPolls => [...prevPolls, response.data]);
@@ -63,25 +58,22 @@ export default function Mypolls() {
                     setOptions("");
                 })
                 .catch(error => {
-                    console.error("There was an error creating the poll:", error);
+                    console.error("Error creating poll:", error);
                 });
         } else {
-            alert("Please provide both a question and options.");
+            alert("Please enter both a question and options.");
         }
     };
 
     if (loading || loadingUserId) {
-        return <ActivityIndicator size="large" color="#007bff" />;  // Show loading spinner if still loading
+        return <ActivityIndicator size="large" color="#007bff" />;
     }
 
     return (
         <View style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.headerText}>Create Poll</Text>
-            </View>
+            <Text style={styles.title}>Create a New Poll</Text>
 
-            {/* Create Poll Form */}
-            <View style={styles.formContainer}>
+            <View style={styles.inputContainer}>
                 <TextInput
                     style={styles.input}
                     placeholder="Enter your question"
@@ -97,35 +89,36 @@ export default function Mypolls() {
                     placeholderTextColor="#a0a0a0"
                 />
                 <TouchableOpacity style={styles.createButton} onPress={handleCreatePoll}>
-                    <Text style={styles.createButtonText}>Create Poll</Text>
+                    <LinearGradient colors={["#007bff", "#0056b3"]} style={styles.gradientButton}>
+                        <Text style={styles.createButtonText}>Create Poll</Text>
+                    </LinearGradient>
                 </TouchableOpacity>
             </View>
 
-            <View style={styles.pollListContainer}>
-                <Text style={styles.pollCountText}>Your Polls: {pollCount}</Text>
-                <FlatList
-    data={polls}
-    keyExtractor={(item) => item._id}
-    contentContainerStyle={styles.pollList}
-    renderItem={({ item }) => (
-        <View style={styles.pollCard}>
-            <Text style={styles.pollQuestion}>{item.question}</Text>
-            <View style={styles.pollOptions}>
-                {item.options && item.options.map((option) => (
-                    <Text key={option._id} style={styles.voteText}>
-                        {option.text} - {option.votes} votes
-                    </Text>
-                ))}
-            </View>
-            <TouchableOpacity style={styles.shareIcon}>
-                <Icon name="share-social" size={22} color="#007bff" />
-            </TouchableOpacity>
-        </View>
-    )}
-    showsVerticalScrollIndicator={false}
-/>
+            <Text style={styles.pollCount}>Your Polls ({pollCount})</Text>
 
-            </View>
+            <FlatList
+                data={polls}
+                keyExtractor={(item) => item._id}
+                contentContainerStyle={styles.pollList}
+                renderItem={({ item }) => (
+                    <View style={styles.pollCard}>
+                        <Text style={styles.pollQuestion}>{item.question}</Text>
+                        <View style={styles.pollOptions}>
+                            {item.options && item.options.map((option) => (
+                                <View key={option._id} style={styles.voteBadge}>
+                                    <Text style={styles.voteText}>{option.text}</Text>
+                                    <Text style={styles.voteCount}>{option.votes} votes</Text>
+                                </View>
+                            ))}
+                        </View>
+                        <TouchableOpacity style={styles.shareIcon}>
+                            <Icon name="share-social" size={22} color="#007bff" />
+                        </TouchableOpacity>
+                    </View>
+                )}
+                showsVerticalScrollIndicator={false}
+            />
         </View>
     );
 }
@@ -133,28 +126,26 @@ export default function Mypolls() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#f5f5f5",
+        backgroundColor: "#f5f7fa",
         paddingTop: hp("5%"),
         paddingHorizontal: wp("5%"),
     },
-    header: {
-        marginBottom: hp("3%"),
-        alignItems: "center",
-    },
-    headerText: {
-        fontSize: wp("5%"),
+    title: {
+        fontSize: wp("6%"),
         fontWeight: "bold",
         color: "#333",
+        marginBottom: hp("2%"),
+        textAlign: "center",
     },
-    formContainer: {
-        marginBottom: hp("3%"),
+    inputContainer: {
         backgroundColor: "#fff",
         padding: wp("4%"),
-        borderRadius: 10,
+        borderRadius: 12,
         shadowColor: "#000",
         shadowOpacity: 0.1,
         shadowRadius: 5,
         elevation: 3,
+        marginBottom: hp("3%"),
     },
     input: {
         borderWidth: 1,
@@ -166,8 +157,11 @@ const styles = StyleSheet.create({
         backgroundColor: "#fff",
     },
     createButton: {
-        backgroundColor: "#007bff",
-        paddingVertical: hp("1.5%"),
+        borderRadius: 10,
+        overflow: "hidden",
+    },
+    gradientButton: {
+        paddingVertical: hp("1.8%"),
         borderRadius: 10,
         alignItems: "center",
     },
@@ -176,20 +170,19 @@ const styles = StyleSheet.create({
         fontSize: wp("4.2%"),
         fontWeight: "bold",
     },
-    pollListContainer: {
-        flex: 1,
-        marginTop: hp("3%"),
-    },
-    pollCountText: {
+    pollCount: {
         fontSize: wp("4.5%"),
         fontWeight: "bold",
         color: "#333",
         marginBottom: hp("2%"),
     },
+    pollList: {
+        paddingBottom: hp("10%"),
+    },
     pollCard: {
         backgroundColor: "#fff",
         padding: wp("4%"),
-        borderRadius: 10,
+        borderRadius: 12,
         marginBottom: hp("2%"),
         shadowColor: "#000",
         shadowOpacity: 0.1,
@@ -199,24 +192,32 @@ const styles = StyleSheet.create({
     pollQuestion: {
         fontSize: wp("4.5%"),
         fontWeight: "bold",
-        marginBottom: hp("1%"),
         color: "#333",
+        marginBottom: hp("1%"),
     },
     pollOptions: {
-        fontSize: wp("4%"),
-        color: "#777",
-        marginBottom: hp("1%"),
+        marginTop: hp("1%"),
+    },
+    voteBadge: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        backgroundColor: "#eef3ff",
+        borderRadius: 8,
+        paddingVertical: hp("1%"),
+        paddingHorizontal: wp("3%"),
+        marginVertical: hp("0.5%"),
     },
     voteText: {
         fontSize: wp("4%"),
         color: "#333",
-        marginVertical: hp("0.5%"),
+    },
+    voteCount: {
+        fontSize: wp("4%"),
+        fontWeight: "bold",
+        color: "#007bff",
     },
     shareIcon: {
         marginTop: hp("2%"),
         alignSelf: "flex-end",
-    },
-    pollList: {
-        paddingBottom: hp("10%"),
     },
 });
