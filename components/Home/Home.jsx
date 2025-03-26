@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, Image, TouchableOpacity, FlatList } from "react-native";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
+import Icon from "react-native-vector-icons/Ionicons"; // Import icon
 
-// Sample Poll Data
 const polls = [
     {
         id: "1",
@@ -36,7 +36,6 @@ export default function Home() {
     const handleVote = (pollId, index) => {
         setSelectedPolls((prev) => {
             if (prev[pollId] === index) {
-                // If the same option is clicked again, deselect it
                 const updatedPolls = { ...prev };
                 delete updatedPolls[pollId];
                 return updatedPolls;
@@ -47,7 +46,6 @@ export default function Home() {
 
     return (
         <View style={styles.container}>
-            {/* Header with Logo */}
             <View style={styles.header}>
                 <Image source={require("../../assets/download.png")} style={styles.logo} />
             </View>
@@ -92,7 +90,13 @@ export default function Home() {
                               </TouchableOpacity>
                             );
                         })}
+                          <View style={styles.shareContainer}>
+                <TouchableOpacity onPress={() => console.log(`Sharing poll: ${item.question}`)}>
+                <Icon name="share" size={24} color="#007bff" />
+                    </TouchableOpacity>
+            </View>
                     </View>
+                    
                 )}
             />
         </View>
@@ -167,4 +171,10 @@ const styles = StyleSheet.create({
         color: "#007bff",
         fontSize: wp("4%"),
     },
+    shareContainer: {
+        flexDirection: "row",
+        justifyContent: "flex-end",
+        marginTop: hp("1%"),
+    },
+    
 });
