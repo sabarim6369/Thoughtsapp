@@ -1,85 +1,148 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from "react-native";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
 import Icon from "react-native-vector-icons/Ionicons";
+import axios from "axios";
+import API_URL from "../../api";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 export default function Notifications() {
-    const [notifications, setNotifications] = useState([
-        { id: '1', type: 'friendRequest', user: 'John Doe', message: 'sent you a friend request', status: 'pending' },
-        { id: '2', type: 'like', user: 'Jane Smith', message: 'liked your post', status: 'read' },
-        { id: '3', type: 'friendRequest', user: 'Alice Brown', message: 'sent you a friend request', status: 'pending' },
-    ]);
+    const [notifications, setNotifications] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [loadingUserId, setLoadingUserId] = useState(true); // Track userId loading state
+    const [userId, setUserId] = useState(null);
 
-    const handleAccept = (id) => {
-        setNotifications(notifications.map(notification =>
-            notification.id === id ? { ...notification, status: 'accepted' } : notification
-        ));
+    useEffect(() => {
+        if (userId && !loadingUserId) {  
+
+        fetchFriendRequests();
+        }
+    }, [userId, loadingUserId]);
+    useEffect(() => {
+        const fetchUserId = async () => {
+            try {
+                const storedUserId = await AsyncStorage.getItem('userId');
+                if (storedUserId) {
+                    setUserId(storedUserId);  // Set userId to state
+                }
+            } catch (error) {
+                console.error('Error fetching userId from AsyncStorage:', error);
+            } finally {
+                setLoadingUserId(false);  // Stop loading state once done
+            }
+        };
+
+        fetchUserId();
+    }, []); 
+    const fetchFriendRequests = async () => {
+        setLoading(true);
+        try {
+            const response = await axios.get(`${API_URL}/friend/requests/${userId}`);
+            const friendRequests = response.data.friendRequests.map(request => ({
+                id: request._id,
+                type: "friendRequest",  
+                user: request.username,
+                message: "sent you a friend request",
+                status: "pending",
+                requesterId: request._id,
+            }));
+            setNotifications(friendRequests);
+        } catch (error) {
+            console.error("Error fetching friend requests", error);
+        }
+        setLoading(false);
     };
 
-    const handleReject = (id) => {
-        setNotifications(notifications.map(notification =>
-            notification.id === id ? { ...notification, status: 'rejected' } : notification
-        ));
+    const handleAccept = async (requesterId) => {
+        try {
+            await axios.post(`${API_URL}/friend/acceptRequest`, {
+                userId: userId,
+                requesterId,
+            });
+
+            setNotifications(notifications.map(notification =>
+                notification.id === requesterId ? { ...notification, status: "accepted" } : notification
+            ));
+        } catch (error) {
+            console.error("Error accepting friend request", error);
+        }
     };
 
+    const handleReject = async (requesterId) => {
+        try {
+            await axios.post(`${API_URL}/friend/rejectRequest`, {
+                userId: userId,
+                requesterId,
+            });
+    
+            setNotifications(notifications.filter(notification => notification.id !== requesterId));
+    
+            alert("Success", "Friend request rejected successfully");
+        } catch (error) {
+            console.error("Error rejecting friend request", error);
+            alert("Error", "Failed to reject friend request");
+        }
+    };
     return (
         <View style={styles.container}>
-            {/* Header Section */}
             <View style={styles.header}>
                 <Text style={styles.headerText}>Notifications</Text>
             </View>
-
-            {/* Notifications List */}
-            <FlatList
-                data={notifications}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                    <View style={styles.notificationCard}>
-                        <Text style={styles.notificationMessage}>
-                            <Text style={styles.userName}>{item.user}</Text> {item.message}
-                        </Text>
-
-                        {item.type === 'friendRequest' && (
-                            <View style={styles.friendRequestActions}>
-                                {item.status === 'pending' ? (
-                                    <>
-                                        <TouchableOpacity
-                                            style={[styles.actionButton, styles.acceptButton]}
-                                            onPress={() => handleAccept(item.id)}>
-                                            <Text style={styles.actionButtonText}>Accept</Text>
-                                        </TouchableOpacity>
-                                        <TouchableOpacity
-                                            style={[styles.actionButton, styles.rejectButton]}
-                                            onPress={() => handleReject(item.id)}>
-                                            <Text style={styles.actionButtonText}>Reject</Text>
-                                        </TouchableOpacity>
-                                    </>
-                                ) : item.status === 'accepted' ? (
-                                    <View style={styles.statusLabel}>
-                                        <Icon name="checkmark-circle" size={22} color="#28a745" />
-                                        <Text style={styles.statusText}>Accepted</Text>
-                                    </View>
-                                ) : (
-                                    <View style={styles.statusLabel}>
-                                        <Icon name="close-circle" size={22} color="#FF6347" />
-                                        <Text style={styles.statusText}>Rejected</Text>
-                                    </View>
-                                )}
-                            </View>
-                        )}
-
-                        {item.type === 'like' && (
-                            <View style={styles.likeActions}>
-                                <Icon name="heart" size={22} color="#FF6347" />
-                                <Text style={styles.likeText}>Liked your post</Text>
-                            </View>
-                        )}
-                    </View>
-                )}
-                showsVerticalScrollIndicator={false}
-            />
+    
+            {loading ? (
+                <ActivityIndicator size="large" color="#007bff" />
+            ) : notifications.length === 0 ? ( // Show "No notifications" if the list is empty
+                <View style={styles.noNotificationsContainer}>
+                    <Text style={styles.noNotificationsText}>No notifications</Text>
+                </View>
+            ) : (
+                <FlatList
+                    data={notifications}
+                    keyExtractor={(item) => item.id}
+                    renderItem={({ item }) => (
+                        <View style={styles.notificationCard}>
+                            <Text style={styles.notificationMessage}>
+                                <Text style={styles.userName}>{item.user}</Text> {item.message}
+                            </Text>
+    
+                            {item.type === "friendRequest" && (
+                                <View style={styles.friendRequestActions}>
+                                    {item.status === "pending" ? (
+                                        <>
+                                            <TouchableOpacity
+                                                style={[styles.actionButton, styles.acceptButton]}
+                                                onPress={() => handleAccept(item.requesterId)}>
+                                                <Text style={styles.actionButtonText}>Accept</Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity
+                                                style={[styles.actionButton, styles.rejectButton]}
+                                                onPress={() => handleReject(item.requesterId)}>
+                                                <Text style={styles.actionButtonText}>Reject</Text>
+                                            </TouchableOpacity>
+                                        </>
+                                    ) : (
+                                        <View style={styles.statusLabel}>
+                                            <Icon
+                                                name={item.status === "accepted" ? "checkmark-circle" : "close-circle"}
+                                                size={22}
+                                                color={item.status === "accepted" ? "#28a745" : "#FF6347"}
+                                            />
+                                            <Text style={styles.statusText}>
+                                                {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+                                            </Text>
+                                        </View>
+                                    )}
+                                </View>
+                            )}
+                        </View>
+                    )}
+                    showsVerticalScrollIndicator={false}
+                />
+            )}
         </View>
     );
+    
 }
 
 const styles = StyleSheet.create({
@@ -143,17 +206,6 @@ const styles = StyleSheet.create({
         fontSize: wp("4%"),
         fontWeight: "500",
     },
-    likeActions: {
-        flexDirection: "row",
-        alignItems: "center",
-        marginTop: hp("1%"),
-    },
-    likeText: {
-        marginLeft: wp("2%"),
-        fontSize: wp("4%"),
-        color: "#333",
-        fontWeight: "500",
-    },
     statusLabel: {
         flexDirection: "row",
         alignItems: "center",
@@ -165,4 +217,15 @@ const styles = StyleSheet.create({
         color: "#333",
         fontWeight: "500",
     },
+    noNotificationsContainer: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    noNotificationsText: {
+        fontSize: wp("4.5%"),
+        color: "#888",
+        fontStyle: "italic",
+    },
+    
 });

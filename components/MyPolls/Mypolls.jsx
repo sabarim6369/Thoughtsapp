@@ -31,11 +31,9 @@ export default function Mypolls() {
         };
 
         fetchUserId();
-    }, []);  // Only run once when the component mounts
-
-    // Fetch polls after userId is retrieved
+    }, []); 
     useEffect(() => {
-        if (userId && !loadingUserId) {  // Ensure userId is available and not still loading
+        if (userId && !loadingUserId) {  
             axios.get(`${API_URL}/poll/getPolls/${userId}`)
                 .then(response => {
                     setPolls(response.data);
