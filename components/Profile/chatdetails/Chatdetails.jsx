@@ -15,9 +15,12 @@ import Icon from "react-native-vector-icons/Ionicons";
 import axios from "axios";
 import API_URL from "../../../api";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation } from '@react-navigation/native';
 
-const ChatDetails = ({ route, navigation }) => {
+const ChatDetails = ({ route }) => {
   const { chat } = route.params;
+      const navigation = useNavigation();
+  
   const [message, setMessage] = useState("");
   const flatListRef = useRef(null);
   const [friendList, setFriendList] = useState([]);

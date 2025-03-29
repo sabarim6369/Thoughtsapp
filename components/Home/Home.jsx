@@ -139,7 +139,7 @@ const handleFriendRequest = (friendId) => {
     axios.post(`${API_URL}/friend/sendRequest`, { senderId: userId, receiverId: friendId })
         .then(response => {
             alert(response.data.message); 
-            setFriendList([...friendList, friendId]);
+            // setFriendList([...friendList, friendId]);
         })
         .catch(error => {
             if (error.response) {
@@ -169,137 +169,161 @@ const handleFriendRequest = (friendId) => {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.pollList}
             renderItem={({ item }) => {
-                const isFriend = friendList.includes(item.userId);
-                const totalVotes = item.options.reduce((acc, option) => acc + option.votes, 0) || 1; // Avoid division by zero
-            
-                return (
-                    <View style={styles.card}>
-                        <View style={styles.profileRow}>
-                            <Image source={{ uri: item.profileImage }} style={styles.profileImage} />
-                            <Text style={styles.userName}>{item.user}</Text>
+              const isFriend = friendList.includes(item.userId);
+              const totalVotes =
+                item.options.reduce((acc, option) => acc + option.votes, 0) ||
+                1; // Avoid division by zero
+
+              return (
+                <View style={styles.card}>
+                  <View style={styles.profileRow}>
+                    <Image
+                      source={{ uri: item.profileImage }}
+                      style={styles.profileImage}
+                    />
+                    <Text style={styles.userName}>{item.user}</Text>
+                  </View>
+                  <Text style={styles.question}>{item.question}</Text>
+
+                  {item.options.map((option, index) => {
+                    const isSelected =
+                      selectedPolls[item.id] === index || option.marked;
+                    const totalVotes = item.options.reduce(
+                      (sum, opt) => sum + opt.votes,
+                      0
+                    ); // Calculate total votes
+                    const votePercentage =
+                      totalVotes > 0
+                        ? ((option.votes / totalVotes) * 100).toFixed(1)
+                        : 0;
+
+                    const hasVotes = totalVotes > 0;
+
+                    return (
+                      <TouchableOpacity
+                        key={index}
+                        style={[
+                          styles.optionButton,
+                          isSelected ? styles.selectedOption : null,
+                        ]}
+                        onPress={() => handleVote(item.id, index)}
+                        disabled={option.marked}
+                      >
+                        <View style={styles.optionContent}>
+                          <Text
+                            style={[
+                              styles.optionText,
+                              isSelected
+                                ? styles.selectedOptionText
+                                : styles.unselectedOptionText,
+                            ]}
+                          >
+                            {option.text} {option.marked && " ✔"}
+                          </Text>
+
+                          {hasVotes && (
+                            <Text
+                              style={[
+                                styles.votePercentage,
+                                isSelected
+                                  ? styles.selectedOptionText
+                                  : styles.unselectedOptionText,
+                              ]}
+                            >
+                              {option.votes} votes • {votePercentage}%
+                            </Text>
+                          )}
                         </View>
-                        <Text style={styles.question}>{item.question}</Text>
-            
-                         {item.options.map((option, index) => {
-                           const isSelected =
-                             selectedPolls[item.id] === index || option.marked;
-                           const totalVotes = item.options.reduce(
-                             (sum, opt) => sum + opt.votes,
-                             0
-                           ); // Calculate total votes
-                           const votePercentage =
-                             totalVotes > 0
-                               ? ((option.votes / totalVotes) * 100).toFixed(1)
-                               : 0;
+                      </TouchableOpacity>
+                    );
+                  })}
 
-                           const hasVotes = totalVotes > 0;
+                  <View style={styles.actionIcons}>
+                    <TouchableOpacity
+                      onPress={() => handleSharePress(item)}
+                      style={styles.iconSpacing}
+                    >
+                      <Icon
+                        name="share-social-outline"
+                        size={24}
+                        color="#007bff"
+                      />
+                    </TouchableOpacity>
 
-                           return (
-                             <TouchableOpacity
-                               key={index}
-                               style={[
-                                 styles.optionButton,
-                                 isSelected ? styles.selectedOption : null,
-                               ]}
-                               onPress={() => handleVote(item.id, index)}
-                               disabled={option.marked}
-                             >
-                               <View style={styles.optionContent}>
-                                 <Text
-                                   style={[
-                                     styles.optionText,
-                                     isSelected
-                                       ? styles.selectedOptionText
-                                       : styles.unselectedOptionText,
-                                   ]}
-                                 >
-                                   {option.text} {option.marked && " ✔"}
-                                 </Text>
-
-                                 {hasVotes && (
-                                   <Text
-                                     style={[
-                                       styles.votePercentage,
-                                       isSelected
-                                         ? styles.selectedOptionText
-                                         : styles.unselectedOptionText,
-                                     ]}
-                                   >
-                                     {option.votes} votes • {votePercentage}%
-                                   </Text>
-                                 )}
-                               </View>
-                             </TouchableOpacity>
-                           );
-                         })}
-            
-                        <View style={styles.actionIcons}>
-                            <TouchableOpacity onPress={() => handleSharePress(item)} style={styles.iconSpacing}>
-                                <Icon name="share-social-outline" size={24} color="#007bff" />
-                            </TouchableOpacity>
-            
-                            {!isFriend && (
-                                <TouchableOpacity onPress={() => handleFriendRequest(item.userid)}>
-                                    <Icon name="person-add-outline" size={24} color="#007bff" />
-                                </TouchableOpacity>
-                            )}
-                        </View>
-                    </View>
-                );
+                    {!isFriend && (
+                      <TouchableOpacity
+                        onPress={() => handleFriendRequest(item.userid)}
+                      >
+                        <Icon
+                          name="person-add-outline"
+                          size={24}
+                          color="#007bff"
+                        />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </View>
+              );
             }}
-            
           />
         )}
-    <Modal visible={modalVisible} animationType="slide" transparent>
-      <View style={styles.modalContainer}>
-        <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Select Friends to Share</Text>
+        <Modal visible={modalVisible} animationType="slide" transparent>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Select Friends to Share</Text>
 
-          {/* Friend List - Limited to 5 Visible */}
-          <FlatList
-            data={friendList}
-            keyExtractor={(item, index) => item?._id?.toString() || index.toString()}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={[
-                  styles.friendItem,
-                  selectedFriends.includes(item._id) && styles.selectedFriend,
-                ]}
-                onPress={() => toggleFriendSelection(item._id)}
-              >
-                <View style={styles.checkbox}>
-                  {selectedFriends.includes(item._id) && <Text style={styles.checkmark}>✔</Text>}
-                </View>
-                <Image
-                  source={{ uri: item.profileImage || "https://via.placeholder.com/50" }}
-                  style={styles.profileImage}
-                />
-                <Text style={styles.friendName}>{item.username}</Text>
-              </TouchableOpacity>
-            )}
-            style={{ maxHeight: 300 }} // Keeps list limited
-            showsVerticalScrollIndicator={false}
-          />
+              {/* Friend List - Limited to 5 Visible */}
+              <FlatList
+                data={friendList}
+                keyExtractor={(item, index) =>
+                  item?._id?.toString() || index.toString()
+                }
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={[
+                      styles.friendItem,
+                      selectedFriends.includes(item._id) &&
+                        styles.selectedFriend,
+                    ]}
+                    onPress={() => toggleFriendSelection(item._id)}
+                  >
+                    <View style={styles.checkbox}>
+                      {selectedFriends.includes(item._id) && (
+                        <Text style={styles.checkmark}>✔</Text>
+                      )}
+                    </View>
+                    <Image
+                      source={{
+                        uri:
+                          item.profileImage || "https://via.placeholder.com/50",
+                      }}
+                      style={styles.profileImage}
+                    />
+                    <Text style={styles.friendName}>{item.username}</Text>
+                  </TouchableOpacity>
+                )}
+                style={{ maxHeight: 300 }} // Keeps list limited
+                showsVerticalScrollIndicator={false}
+              />
 
-          {/* Action Buttons */}
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              style={[styles.button, styles.shareButton]}
-              onPress={() => handleShare(selectedFriends)}
-            >
-              <Text style={styles.buttonText}>Share</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.button, styles.cancelButton]}
-              onPress={() => setModalVisible(false)}
-            >
-              <Text style={styles.buttonText}>Cancel</Text>
-            </TouchableOpacity>
+              {/* Action Buttons */}
+              <View style={styles.buttonContainer}>
+                <TouchableOpacity
+                  style={[styles.button, styles.shareButton]}
+                  onPress={() => handleShare(selectedFriends)}
+                >
+                  <Text style={styles.buttonText}>Share</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.button, styles.cancelButton]}
+                  onPress={() => setModalVisible(false)}
+                >
+                  <Text style={styles.buttonText}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
-        </View>
-      </View>
-    </Modal>
-
+        </Modal>
       </View>
     );
 }

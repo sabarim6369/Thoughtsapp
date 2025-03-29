@@ -21,25 +21,10 @@ export default function Profile() {
     const navigation = useNavigation();
     const [chats, setchats] = useState([]);
     const [showDropdown, setShowDropdown] = useState(false);
+    const[suggestedfriends,setsuggestedfriends]=useState([]);
+    const[totalpolls,settototalpolls]=useState();
 
-    const suggestedUsers = [
-        {
-            id: '1',
-            username: 'Prakash',
-            avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3',
-        },
-        {
-            id: '2',
-            username: 'Yogendra',
-            avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3',
-        },
-        {
-            id: '3',
-            username: 'Lohith',
-            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3',
-        },
-    ];
-
+  
     useEffect(() => {
         const fetchUserId = async () => {
             try {
@@ -58,9 +43,14 @@ export default function Profile() {
 
     useEffect(() => {
         if (userId) {
-            fetchFriends();
+            const fetchData = async () => {
+                await fetchFriends();
+                await fetchsuggestedFriends();
+            };
+            fetchData(); 
         }
     }, [userId]);
+    
 
     const fetchFriends = async () => {
         try {
@@ -69,6 +59,22 @@ export default function Profile() {
                 setFriends(response.data.friends || []);
                 setuserdata(response.data.user);
                 setchats(response.data.friendsWithSharedPolls);
+                settototalpolls(response.data.totalPolls)
+            }
+        } catch (err) {
+            console.error("Fetch error:", err.message);
+            setError("Failed to fetch data. Please try again.");
+            Alert.alert("Error", "Unable to fetch data from server");
+        } finally {
+            setLoading(false);
+        }
+    };
+    const fetchsuggestedFriends = async () => {
+        try {
+            const response = await axios.get(`${API_URL}/friend/suggestedfriendlist/${userId}`);
+            if (response.status === 200) {
+                setsuggestedfriends(response.data.suggestedFriends || []);
+               
             }
         } catch (err) {
             console.error("Fetch error:", err.message);
@@ -82,9 +88,9 @@ export default function Profile() {
     const handleSave = async () => {
         try {
             const response = await axios.post(`${API_URL}/auth/edit`, {
-                username: editedUsername,
-                bio: editedbio,
-                userId: userId
+              username: editedUsername,
+              bio: editedbio,
+              userId: userId,
             });
 
             if (response.status === 200) {
@@ -104,13 +110,31 @@ export default function Profile() {
         navigation.navigate("ChatDetails", { chat: item });
       }
     const handleLogout = async () => {
-        try {
-            await AsyncStorage.removeItem("userId");
-            navigation.replace("Login");
-        } catch (error) {
-            console.error("Logout failed:", error);
-        }
+      try {
+        await AsyncStorage.removeItem("userId");
+        navigation.replace("Login");
+      } catch (error) {
+        console.error("Logout failed:", error);
+      }
     };
+    
+
+const handleFriendRequest = (friendId) => {
+    console.log(friendId)
+    console.log(userId)
+    axios.post(`${API_URL}/friend/sendRequest`, { senderId: userId, receiverId: friendId })
+        .then(response => {
+            alert(response.data.message); 
+            // setFriendList([...friendList, friendId]);
+        })
+        .catch(error => {
+            if (error.response) {
+                alert(error.response.data.message); // Show the backend error message
+            } else {
+                alert("Something went wrong. Please try again.");
+            }
+        });
+};
 
     if (loading) {
         return <ActivityIndicator size="large" color="#0095f6" style={styles.loader} />;
@@ -118,52 +142,84 @@ export default function Profile() {
 
   
      const renderfriends = () => (
-            <View style={styles.suggestedSection}>
-                <View style={styles.suggestedHeader}>
-                    <Text style={styles.suggestedTitle}>Friends</Text>
-                    <TouchableOpacity>
-                        <Text style={styles.seeAllText}>See all</Text>
-                    </TouchableOpacity>
-                </View>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.suggestedScroll}>
-                    {friends.map((user) => (
-                        <View key={user.id} style={styles.suggestedCard}>
-                            <Image source={{ uri: user.avatar || "https://cdn-icons-png.flaticon.com/512/149/149071.png"  }} style={styles.suggestedAvatar} />
-                            <Text style={styles.suggestedUsername}>{user.username}</Text>
-                           
-                        </View>
-                    ))}
-                </ScrollView>
-            </View>
-        );
+       <View style={styles.suggestedSection}>
+         <View style={styles.suggestedHeader}>
+           <Text style={styles.suggestedTitle}>Friends</Text>
+           <TouchableOpacity>
+             <Text style={styles.seeAllText}>See all</Text>
+           </TouchableOpacity>
+         </View>
+         <ScrollView
+           horizontal
+           showsHorizontalScrollIndicator={false}
+           style={styles.suggestedScroll}
+         >
+           {friends.length === 0 ? (
+             <Text style={styles.noFriendsText}>No friends found</Text>
+           ) : (
+             <ScrollView
+               horizontal
+               showsHorizontalScrollIndicator={false}
+               style={styles.suggestedScroll}
+             >
+               {friends.map((user) => (
+                 <View key={user.id} style={styles.suggestedCard}>
+                   <Image
+                     source={{
+                       uri:
+                         user.avatar ||
+                         "https://cdn-icons-png.flaticon.com/512/149/149071.png",
+                     }}
+                     style={styles.suggestedAvatar}
+                   />
+                   <Text style={styles.suggestedUsername}>{user.username}</Text>
+                 </View>
+               ))}
+             </ScrollView>
+           )}
+         </ScrollView>
+       </View>
+     );
     const renderSuggestedUsers = () => (
-        <View style={styles.suggestedSection}>
-            <View style={styles.suggestedHeader}>
-                <Text style={styles.suggestedTitle}>Suggested for you</Text>
-                <TouchableOpacity>
-                    <Text style={styles.seeAllText}>See all</Text>
-                </TouchableOpacity>
-            </View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.suggestedScroll}>
-                {suggestedUsers.map((user) => (
-                    <View key={user.id} style={styles.suggestedCard}>
-                        <Image source={{ uri: user.avatar }} style={styles.suggestedAvatar} />
-                        <Text style={styles.suggestedUsername}>{user.username}</Text>
-                        <TouchableOpacity style={styles.followButton}>
-                            <Text style={styles.followButtonText}>Follow</Text>
-                        </TouchableOpacity>
-                    </View>
-                ))}
-            </ScrollView>
+      <View style={styles.suggestedSection}>
+        <View style={styles.suggestedHeader}>
+          <Text style={styles.suggestedTitle}>Suggested for you</Text>
+          <TouchableOpacity>
+            <Text style={styles.seeAllText}>See all</Text>
+          </TouchableOpacity>
         </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.suggestedScroll}
+        >
+          {suggestedfriends.map((user) => (
+            <View key={user.id} style={styles.suggestedCard}>
+              <Image
+                source={{
+                  uri:
+                    user.avatar ||
+                    "https://cdn-icons-png.flaticon.com/512/149/149071.png",
+                }}
+                style={styles.suggestedAvatar}
+              />
+              <Text style={styles.suggestedUsername}>{user.username}</Text>
+              <TouchableOpacity
+                style={styles.followButton}
+                onPress={() => handleFriendRequest(user._id)}
+              >
+                <Text style={styles.followButtonText}>Follow</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+        </ScrollView>
+      </View>
     );
 
     return (
       <ScrollView style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.username}>
-            {userdata?.username || "Noname"}
-          </Text>
+          <Text style={styles.username}>{userdata?.username || "Noname"}</Text>
           <View style={styles.headerRight}>
             <TouchableOpacity
               style={styles.settingsButton}
@@ -211,8 +267,8 @@ export default function Profile() {
           />
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>0</Text>
-              <Text style={styles.statLabel}>Posts</Text>
+              <Text style={styles.statNumber}>{totalpolls}</Text>
+              <Text style={styles.statLabel}>Polls</Text>
             </View>
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>{friends.length}</Text>

@@ -20,26 +20,29 @@ export default function Login({navigation}) {
   const [password, setPassword] = useState("");
   const handleLogin = async () => {
     try {
-      const response = await axios.post(`${API_URL}/auth/login`, {
-        email,
-        password,
-        rememberMe
-      });
+        const response = await axios.post(`${API_URL}/auth/login`, {
+            email,
+            password,
+            rememberMe
+        });
 
-      if (response.status === 200) {
-        const { token, userId } = response.data;
-        await AsyncStorage.setItem('token', token);
-        await AsyncStorage.setItem('userId', userId.toString());
-        console.log('Login successful, token:', token, 'userId:', userId);
-        setEmail("");
-        setPassword("");
-        navigation.navigate("Home");
-      }
+        console.log("Full Response:", response.data); // Log full response
+
+        if (response.status === 200) {
+            const { token, userId, ...otherData } = response.data;
+            await AsyncStorage.setItem('token', token);
+            await AsyncStorage.setItem('userId', userId.toString());
+            console.log('Login successful:', response.data);
+
+            setEmail("");
+            setPassword("");
+            navigation.navigate("Home", { userData: response.data }); // Pass full data to the next screen
+        }
     } catch (error) {
-      console.error('Login error:', error.response ? error.response.data : error.message);
-      // Handle login failure (e.g., show an alert)
+        console.error('Login error:', error.response ? error.response.data : error.message);
+        alert(error.response?.data?.message || "Login failed. Please try again.");
     }
-  };
+};
 
 
   return (
