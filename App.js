@@ -13,6 +13,7 @@ import Home from "./components/Home/Home";
 import Mypolls from "./components/MyPolls/Mypolls";
 import Notifications from "./components/Notification/Notification";
 import Profile from "./components/Profile/Profile";
+import ChatDetails from "./components/Profile/chatdetails/Chatdetails";
 
 const Stack = createStackNavigator();
 
@@ -51,6 +52,14 @@ function Profilewithfooter() {
     </View>
   );
 }
+function Chatdetailswithfooter({route}) {
+  return (
+    <View style={{ flex: 1 }}>
+      <ChatDetails route={route} />  
+      <Footer />
+    </View>
+  );
+}
 
 export default function App() {
   const [initialRoute, setInitialRoute] = useState(null);
@@ -62,12 +71,12 @@ export default function App() {
 
         if (token) {
           const decodedToken = jwtDecode(token);
-          const currentTime = Date.now() / 1000; // Convert milliseconds to seconds
+          const currentTime = Date.now() / 1000; 
 
           if (decodedToken.exp > currentTime) {
             setInitialRoute("Home");
           } else {
-            await AsyncStorage.removeItem("token"); // Remove expired token
+            await AsyncStorage.removeItem("token")
             setInitialRoute("Login");
           }
         } else {
@@ -99,6 +108,7 @@ export default function App() {
         <Stack.Screen name="Mypolls" component={Mypollswithfooter} />
         <Stack.Screen name="Notifications" component={Notificationswithfooter} />
         <Stack.Screen name="Profile" component={Profilewithfooter} />
+        <Stack.Screen name="ChatDetails" component={Chatdetailswithfooter} />
       </Stack.Navigator>
       <StatusBar style="auto" />
     </NavigationContainer>
