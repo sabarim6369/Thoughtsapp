@@ -5,6 +5,7 @@ import Icon from "react-native-vector-icons/Ionicons";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import API_URL from "../../api";
 import axios from "axios";
+import { Plus, X, Share2, ChevronRight } from 'lucide-react-native';
 
 
 export default function Home() {
@@ -267,63 +268,64 @@ const handleFriendRequest = (friendId) => {
             }}
           />
         )}
-        <Modal visible={modalVisible} animationType="slide" transparent>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Select Friends to Share</Text>
-
-              {/* Friend List - Limited to 5 Visible */}
-              <FlatList
-                data={friendList}
-                keyExtractor={(item, index) =>
-                  item?._id?.toString() || index.toString()
-                }
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={[
-                      styles.friendItem,
-                      selectedFriends.includes(item._id) &&
-                        styles.selectedFriend,
-                    ]}
-                    onPress={() => toggleFriendSelection(item._id)}
-                  >
-                    <View style={styles.checkbox}>
-                      {selectedFriends.includes(item._id) && (
-                        <Text style={styles.checkmark}>✔</Text>
-                      )}
-                    </View>
-                    <Image
-                      source={{
-                        uri:
-                          item.profileImage || "https://via.placeholder.com/50",
-                      }}
-                      style={styles.profileImage}
-                    />
-                    <Text style={styles.friendName}>{item.username}</Text>
-                  </TouchableOpacity>
-                )}
-                style={{ maxHeight: 300 }} // Keeps list limited
-                showsVerticalScrollIndicator={false}
-              />
-
-              {/* Action Buttons */}
-              <View style={styles.buttonContainer}>
-                <TouchableOpacity
-                  style={[styles.button, styles.shareButton]}
-                  onPress={() => handleShare(selectedFriends)}
-                >
-                  <Text style={styles.buttonText}>Share</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.button, styles.cancelButton]}
-                  onPress={() => setModalVisible(false)}
-                >
-                  <Text style={styles.buttonText}>Cancel</Text>
-                </TouchableOpacity>
-              </View>
+          <Modal
+        visible={modalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.shareModal}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Share with Friends</Text>
+              <TouchableOpacity onPress={() => setModalVisible(false)}>
+                <X size={24} color="#333" />
+              </TouchableOpacity>
             </View>
+
+            <FlatList
+              data={friendList}
+              keyExtractor={(item) => item._id}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[
+                    styles.friendItem,
+                    selectedFriends.includes(item._id) && styles.selectedFriend
+                  ]}
+                  onPress={() => toggleFriendSelection(item._id)}
+                >
+                  <Image
+                    source={{ uri: item.profilePic || "https://via.placeholder.com/50" }}
+                    style={styles.friendAvatar}
+                  />
+                  <Text style={styles.friendName}>{item.username}</Text>
+                  <View style={[
+                    styles.checkbox,
+                    selectedFriends.includes(item._id) && styles.checkedBox
+                  ]}>
+                    {selectedFriends.includes(item._id) && (
+                      <ChevronRight size={16} color="#FFF" />
+                    )}
+                  </View>
+                </TouchableOpacity>
+              )}
+            />
+
+            <TouchableOpacity
+              style={[
+                styles.shareConfirmButton,
+                { opacity: selectedFriends.length === 0 ? 0.5 : 1 }
+              ]}
+              onPress={handleShare}
+              disabled={selectedFriends.length === 0}
+            >
+              <Text style={styles.shareConfirmText}>
+                Share with {selectedFriends.length} friend{selectedFriends.length !== 1 ? 's' : ''}
+              </Text>
+            </TouchableOpacity>
           </View>
-        </Modal>
+        </View>
+      </Modal>
       </View>
     );
 }
@@ -430,100 +432,100 @@ const styles = StyleSheet.create({
     color: "rgba(0, 123, 255, 0.5)",
   },
 
-  modalContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.6)",
-  },
-  modalContent: {
-    backgroundColor: "#fff",
-    padding: 25,
-    borderRadius: 15,
-    width: "85%",
-    alignItems: "center",
-    elevation: 10, // Android shadow
-    shadowColor: "#000", // iOS shadow
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 15,
-  },
-  friendItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 12,
-    marginVertical: 5,
-    width: "100%",
-    backgroundColor: "#f2f2f2",
-    borderRadius: 10,
-    height: 65,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-  },
-  selectedFriend: {
-    backgroundColor: "#e6f9e6",
-    borderColor: "#4CAF50",
-    borderWidth: 1,
-  },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderWidth: 2,
-    borderColor: "#4CAF50",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-    borderRadius: 6,
-    backgroundColor: "#fff",
-  },
-  checkmark: {
-    fontSize: 16,
-    color: "#4CAF50",
-    fontWeight: "bold",
-  },
-  profileImage: {
-    width: 45,
-    height: 45,
-    borderRadius: 25,
-    marginRight: 12,
-  },
-  friendName: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: "#333",
-  },
-  buttonContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 20,
-    width: "100%",
-  },
-  button: {
-    flex: 1,
-    padding: 12,
-    alignItems: "center",
-    borderRadius: 8,
-  },
-  shareButton: {
-    backgroundColor: "#4CAF50",
-    marginRight: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-  },
-  cancelButton: {
-    backgroundColor: "#FF3B30",
-    marginLeft: 8,
-  },
+  // modalContainer: {
+  //   flex: 1,
+  //   justifyContent: "center",
+  //   alignItems: "center",
+  //   backgroundColor: "rgba(0,0,0,0.6)",
+  // },
+  // modalContent: {
+  //   backgroundColor: "#fff",
+  //   padding: 25,
+  //   borderRadius: 15,
+  //   width: "85%",
+  //   alignItems: "center",
+  //   elevation: 10, // Android shadow
+  //   shadowColor: "#000", // iOS shadow
+  //   shadowOffset: { width: 0, height: 4 },
+  //   shadowOpacity: 0.2,
+  //   shadowRadius: 8,
+  // },
+  // modalTitle: {
+  //   fontSize: 20,
+  //   fontWeight: "bold",
+  //   color: "#333",
+  //   marginBottom: 15,
+  // },
+  // friendItem: {
+  //   flexDirection: "row",
+  //   alignItems: "center",
+  //   padding: 12,
+  //   marginVertical: 5,
+  //   width: "100%",
+  //   backgroundColor: "#f2f2f2",
+  //   borderRadius: 10,
+  //   height: 65,
+  //   shadowColor: "#000",
+  //   shadowOffset: { width: 0, height: 2 },
+  //   shadowOpacity: 0.1,
+  //   shadowRadius: 5,
+  // },
+  // selectedFriend: {
+  //   backgroundColor: "#e6f9e6",
+  //   borderColor: "#4CAF50",
+  //   borderWidth: 1,
+  // },
+  // checkbox: {
+  //   width: 24,
+  //   height: 24,
+  //   borderWidth: 2,
+  //   borderColor: "#4CAF50",
+  //   justifyContent: "center",
+  //   alignItems: "center",
+  //   marginRight: 12,
+  //   borderRadius: 6,
+  //   backgroundColor: "#fff",
+  // },
+  // checkmark: {
+  //   fontSize: 16,
+  //   color: "#4CAF50",
+  //   fontWeight: "bold",
+  // },
+  // profileImage: {
+  //   width: 45,
+  //   height: 45,
+  //   borderRadius: 25,
+  //   marginRight: 12,
+  // },
+  // friendName: {
+  //   fontSize: 16,
+  //   fontWeight: "500",
+  //   color: "#333",
+  // },
+  // buttonContainer: {
+  //   flexDirection: "row",
+  //   justifyContent: "space-between",
+  //   marginTop: 20,
+  //   width: "100%",
+  // },
+  // button: {
+  //   flex: 1,
+  //   padding: 12,
+  //   alignItems: "center",
+  //   borderRadius: 8,
+  // },
+  // shareButton: {
+  //   backgroundColor: "#4CAF50",
+  //   marginRight: 8,
+  //   shadowColor: "#000",
+  //   shadowOffset: { width: 0, height: 2 },
+  //   shadowOpacity: 0.2,
+  //   shadowRadius: 5,
+  // },
+  // cancelButton: {
+  //   backgroundColor: "#FF3B30",
+  //   marginLeft: 8,
+  // },
   buttonText: {
     color: "#fff",
     fontSize: 16,
@@ -546,6 +548,135 @@ const styles = StyleSheet.create({
   },
   unselectedOptionText: {
     color: "rgba(0, 123, 255, 0.8)",
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+  },
+  createPollModal: {
+    backgroundColor: "#FFF",
+    borderRadius: wp('4%'),
+    margin: wp('4%'),
+    maxHeight: hp('80%'),
+  },
+  shareModal: {
+    backgroundColor: "#FFF",
+    borderRadius: wp('4%'),
+    margin: wp('4%'),
+    maxHeight: hp('80%'),
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: wp('4%'),
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E5EA",
+  },
+  modalTitle: {
+    fontSize: wp('5%'),
+    fontWeight: "600",
+    color: "#000",
+  },
+  modalScroll: {
+    padding: wp('4%'),
+  },
+  questionInput: {
+    fontSize: wp('4.5%'),
+    padding: wp('4%'),
+    backgroundColor: "#F2F2F7",
+    borderRadius: wp('2%'),
+    marginBottom: hp('2%'),
+  },
+  optionsLabel: {
+    fontSize: wp('4%'),
+    fontWeight: "600",
+    color: "#000",
+    marginBottom: hp('1.5%'),
+  },
+  optionContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: hp('1.5%'),
+  },
+  optionInput: {
+    flex: 1,
+    fontSize: wp('4%'),
+    padding: wp('3%'),
+    backgroundColor: "#F2F2F7",
+    borderRadius: wp('2%'),
+  },
+  removeOption: {
+    marginLeft: wp('3%'),
+  },
+  addOptionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: wp('3%'),
+    marginBottom: hp('3%'),
+  },
+  addOptionText: {
+    marginLeft: wp('2%'),
+    fontSize: wp('4%'),
+    color: "#007AFF",
+    fontWeight: "600",
+  },
+  createButton: {
+    marginBottom: hp('2%'),
+  },
+  gradientButton: {
+    padding: wp('4%'),
+    borderRadius: wp('2%'),
+    alignItems: "center",
+  },
+  createButtonText: {
+    color: "#FFF",
+    fontSize: wp('4%'),
+    fontWeight: "600",
+  },
+  friendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: wp('3%'),
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E5EA",
+  },
+  friendAvatar: {
+    width: wp('10%'),
+    height: wp('10%'),
+    borderRadius: wp('5%'),
+    marginRight: wp('3%'),
+  },
+  friendName: {
+    flex: 1,
+    fontSize: wp('4%'),
+    color: "#000",
+  },
+  checkbox: {
+    width: wp('6%'),
+    height: wp('6%'),
+    borderRadius: wp('3%'),
+    borderWidth: 2,
+    borderColor: "#E5E5EA",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  checkedBox: {
+    backgroundColor: "#007AFF",
+    borderColor: "#007AFF",
+  },
+  shareConfirmButton: {
+    margin: wp('4%'),
+    padding: wp('4%'),
+    backgroundColor: "#007AFF",
+    borderRadius: wp('2%'),
+    alignItems: "center",
+  },
+  shareConfirmText: {
+    color: "#FFF",
+    fontSize: wp('4%'),
+    fontWeight: "600",
   },
   
 });
