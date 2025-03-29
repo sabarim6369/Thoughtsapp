@@ -111,7 +111,7 @@ export default function Profile() {
       }
     const handleLogout = async () => {
       try {
-        await AsyncStorage.removeItem("userId");
+        await AsyncStorage.removeItem("token");
         navigation.replace("Login");
       } catch (error) {
         console.error("Logout failed:", error);
