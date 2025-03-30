@@ -2,18 +2,19 @@ import { StatusBar } from "expo-status-bar";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import {jwtDecode} from "jwt-decode";
+import { jwtDecode } from "jwt-decode";
 import { useEffect, useState } from "react";
 import { View, ActivityIndicator } from "react-native";
 
 import Footer from "./components/Footer";
 import Login from "./components/Login/Login";
 import Signup from "./components/Signup/Signup";
-import Home from "./components/Home/Home";  
+import Home from "./components/Home/Home";
 import Mypolls from "./components/MyPolls/Mypolls";
 import Notifications from "./components/Notification/Notification";
 import Profile from "./components/Profile/Profile";
 import ChatDetails from "./components/Profile/chatdetails/Chatdetails";
+import WelcomeScreen from "./components/Welcomepage/Welcomepage";
 
 const Stack = createStackNavigator();
 
@@ -52,10 +53,11 @@ function Profilewithfooter() {
     </View>
   );
 }
-function Chatdetailswithfooter({route}) {
+
+function Chatdetailswithfooter({ route }) {
   return (
     <View style={{ flex: 1 }}>
-      <ChatDetails route={route} />  
+      <ChatDetails route={route} />
       <Footer />
     </View>
   );
@@ -65,18 +67,35 @@ export default function App() {
   const [initialRoute, setInitialRoute] = useState(null);
 
   useEffect(() => {
+    const checkFirstLaunch = async () => {
+      try {
+        const isFirstLaunch = await AsyncStorage.getItem("isFirstLaunch");
+        
+        if (isFirstLaunch === null) {
+          await AsyncStorage.setItem("isFirstLaunch", "false");
+          setInitialRoute("Welcome");
+        } else {
+          checkAuth();
+        }
+      } catch (error) {
+        console.error("Error checking first launch:", error);
+        setInitialRoute("Login");
+      }
+    };
+
     const checkAuth = async () => {
       try {
+        // await AsyncStorage.removeItem("isFirstLaunch");
         const token = await AsyncStorage.getItem("token");
 
         if (token) {
           const decodedToken = jwtDecode(token);
-          const currentTime = Date.now() / 1000; 
+          const currentTime = Date.now() / 1000;
 
           if (decodedToken.exp > currentTime) {
             setInitialRoute("Home");
           } else {
-            await AsyncStorage.removeItem("token")
+            await AsyncStorage.removeItem("token");
             setInitialRoute("Login");
           }
         } else {
@@ -88,7 +107,7 @@ export default function App() {
       }
     };
 
-    checkAuth();
+    checkFirstLaunch();
   }, []);
 
   if (initialRoute === null) {
@@ -102,6 +121,7 @@ export default function App() {
   return (
     <NavigationContainer>
       <Stack.Navigator initialRouteName={initialRoute} screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Welcome" component={WelcomeScreen} />
         <Stack.Screen name="Login" component={Login} />
         <Stack.Screen name="Signup" component={Signup} />
         <Stack.Screen name="Home" component={HomeWithFooter} />
