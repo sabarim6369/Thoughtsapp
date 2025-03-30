@@ -109,14 +109,21 @@ export default function Profile() {
         console.log("😍😍😍😍😍", JSON.stringify(item, null, 2));
         navigation.navigate("ChatDetails", { chat: item });
       }
-    const handleLogout = async () => {
-      try {
-        await AsyncStorage.removeItem("token");
-        navigation.replace("Login");
-      } catch (error) {
-        console.error("Logout failed:", error);
-      }
-    };
+      const handleLogout = async () => {
+        try {
+          await AsyncStorage.removeItem("token");
+      
+          navigation.reset({
+            index: 0,
+            routes: [{ name: "Login" }],
+          });
+      
+          console.log("User logged out successfully");
+        } catch (error) {
+          console.error("Logout failed:", error);
+        }
+      };
+      
     
 
 const handleFriendRequest = (friendId) => {

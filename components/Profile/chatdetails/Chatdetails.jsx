@@ -215,7 +215,7 @@ console.log("😍😍😍😍😍😂😂😂😂",selectedPoll.id)
                                       ? ((option.votes / totalVotes) * 100).toFixed(1)
                                       : 0;
        
-                                  const hasVotes = totalVotes > 0;
+                                      const hasVoted = item.options.some(opt => opt.marked);
        
                                   return (
                                     <TouchableOpacity
@@ -239,7 +239,7 @@ console.log("😍😍😍😍😍😂😂😂😂",selectedPoll.id)
                                           {option.text} {option.marked && " ✔"}
                                         </Text>
        
-                                        {hasVotes && (
+                                        {hasVoted && (
                                           <Text
                                             style={[
                                               styles.votePercentage,

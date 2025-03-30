@@ -18,7 +18,9 @@ export default function Login({navigation}) {
   const [rememberMe, setRememberMe] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false); 
   const handleLogin = async () => {
+    setLoading(true); 
     try {
         const response = await axios.post(`${API_URL}/auth/login`, {
             email,
@@ -41,6 +43,9 @@ export default function Login({navigation}) {
     } catch (error) {
         console.error('Login error:', error.response ? error.response.data : error.message);
         alert(error.response?.data?.message || "Login failed. Please try again.");
+    }
+    finally {
+      setLoading(false); // Stop loading
     }
 };
 
@@ -95,9 +100,10 @@ export default function Login({navigation}) {
         </View>
 
         <TouchableOpacity style={styles.button} onPress={handleLogin}>
-          <Text style={styles.buttonText}>Login</Text>
+          <Text style={styles.buttonText}>  {loading ? "Logging in..." : "Login"}</Text>
         </TouchableOpacity>
       </View>
+      
     </LinearGradient>
   );
 }

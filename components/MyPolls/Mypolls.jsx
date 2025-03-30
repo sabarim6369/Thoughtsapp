@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, ActivityIndicator, Modal, Image, ScrollView } from "react-native";
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, ActivityIndicator, Modal, Image, ScrollView,Alert } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
-import { Plus, X, Share2, ChevronRight } from 'lucide-react-native';
+import { Plus, X, Share2, ChevronRight,Trash2 } from 'lucide-react-native';
 import axios from "axios";
 import API_URL from "../../api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -204,7 +204,33 @@ export default function Mypolls() {
     setSelectedPoll(poll);
     setModalVisible(true);
   };
+ 
+const handleDeletePoll = (pollId) => {
+  Alert.alert(
+    "Confirm Delete",
+    "Are you sure you want to delete this poll?",
+    [
+      { text: "Cancel", style: "cancel" },
+      { text: "Delete", onPress: () => deletePollFromServer(pollId), style: "destructive" },
+    ]
+  );
+};
 
+const deletePollFromServer = async (pollId) => {
+  try {
+    const response = await axios.delete(`${API_URL}/poll/deletepoll/${pollId}`);
+    
+    if (response.status === 200) {
+      setPolls((prevPolls) => prevPolls.filter((poll) => poll._id !== pollId));
+    } else {
+      Alert.alert("Error", "Failed to delete poll. Please try again.");
+    }
+  } catch (error) {
+    console.error("Error deleting poll:", error);
+    Alert.alert("Error", "Something went wrong while deleting the poll.");
+  }
+};
+  
   const toggleFriendSelection = (id) => {
     setSelectedFriends(prev =>
       prev.includes(id) ? prev.filter(selectedId => selectedId !== id) : [...prev, id]
@@ -266,13 +292,25 @@ export default function Mypolls() {
                 </View>
               ))}
             </View>
-            <TouchableOpacity
-              style={styles.shareButton}
-              onPress={() => handleSharePress(item)}
-            >
-              <Share2 size={20} color="#007AFF" />
-              <Text style={styles.shareText}>Share Poll</Text>
-            </TouchableOpacity>
+            <View style={styles.actionButtons}>
+        {/* Share Button */}
+        <TouchableOpacity
+          style={styles.shareButton}
+          onPress={() => handleSharePress(item)}
+        >
+          <Share2 size={20} color="#007AFF" />
+          <Text style={styles.shareText}>Share Poll</Text>
+        </TouchableOpacity>
+
+        {/* Delete Button */}
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={() => handleDeletePoll(item._id)}
+        >
+          <Trash2 size={20} color="red" />
+          <Text style={styles.deleteText}>Delete</Text>
+        </TouchableOpacity>
+      </View>
           </View>
         )}
       />
@@ -567,4 +605,27 @@ const styles = StyleSheet.create({
   selectedFriend: {
     backgroundColor: "#F2F2F7",
   },
+  actionButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between", // Places Share and Delete buttons at opposite ends
+    alignItems: "center",
+    marginTop: hp("2%"),
+  },
+  deleteButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFE5E5", // Light red background for better visibility
+    padding: wp("2%"),
+    borderRadius: wp("2%"),
+    marginTop:hp("1%")
+
+  },
+  deleteText: {
+    color: "red",
+    fontSize: wp("4%"),
+    fontWeight: "600",
+    marginLeft: wp("1%"),
+  },
+  
+  
 });
