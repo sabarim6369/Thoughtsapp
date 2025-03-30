@@ -15,7 +15,8 @@ import Notifications from "./components/Notification/Notification";
 import Profile from "./components/Profile/Profile";
 import ChatDetails from "./components/Profile/chatdetails/Chatdetails";
 import WelcomeScreen from "./components/Welcomepage/Welcomepage";
-
+import Messages from "./components/Messages/Messages";
+import FriendList from "./components/Profile/Friendlist/Friendlist";
 const Stack = createStackNavigator();
 
 function HomeWithFooter() {
@@ -62,6 +63,24 @@ function Chatdetailswithfooter({ route }) {
     </View>
   );
 }
+function MessageswithFooter({ route }) {
+  return (
+    <View style={{ flex: 1 }}>
+      <Messages route={route} />
+      <Footer />
+    </View>
+  );
+}
+function FriendListWithfooter({ route }) {
+  return (
+    <View style={{ flex: 1 }}>
+      <FriendList route={route} />
+      <Footer />
+    </View>
+  );
+}
+
+
 
 export default function App() {
   const [initialRoute, setInitialRoute] = useState(null);
@@ -129,6 +148,8 @@ export default function App() {
         <Stack.Screen name="Notifications" component={Notificationswithfooter} />
         <Stack.Screen name="Profile" component={Profilewithfooter} />
         <Stack.Screen name="ChatDetails" component={Chatdetailswithfooter} />
+        <Stack.Screen name="Messages" component={MessageswithFooter} />
+        <Stack.Screen name="FriendList" component={FriendListWithfooter} />
       </Stack.Navigator>
       <StatusBar style="auto" />
     </NavigationContainer>

@@ -123,7 +123,43 @@ export default function Profile() {
           console.error("Logout failed:", error);
         }
       };
+      const handleRemoveAccount = async () => {
+        Alert.alert(
+          "Confirm Deletion",
+          "Are you sure you want to delete your account? This action cannot be undone.",
+          [
+            {
+              text: "Cancel",
+              style: "cancel",
+            },
+            {
+              text: "Delete",
+              style: "destructive",
+              onPress: async () => {
+                try {
+                  const response = await axios.post(`${API_URL}/auth/deleteaccount`, {
+                    userId: userId,
+                  });
       
+                  if (response.status === 200) {
+                    await AsyncStorage.removeItem("token");
+                    alert("Your account has been deleted successfully.");
+                    navigation.reset({
+                      index: 0,
+                      routes: [{ name: "Login" }],
+                    });
+                  } else {
+                    alert(response.data.error || "Failed to delete account. Please try again.");
+                  }
+                } catch (err) {
+                  console.error("Error deleting account:", err);
+                  alert("An error occurred. Please check your connection and try again.");
+                }
+              },
+            },
+          ]
+        );
+      };
     
 
 const handleFriendRequest = (friendId) => {
@@ -152,8 +188,8 @@ const handleFriendRequest = (friendId) => {
        <View style={styles.suggestedSection}>
          <View style={styles.suggestedHeader}>
            <Text style={styles.suggestedTitle}>Friends</Text>
-           <TouchableOpacity>
-             <Text style={styles.seeAllText}>See all</Text>
+           <TouchableOpacity onPress={() => navigation.navigate("FriendList", { data: friends, title: "Friends",userId })}>
+           <Text style={styles.seeAllText}>See all</Text>
            </TouchableOpacity>
          </View>
          <ScrollView
@@ -191,8 +227,8 @@ const handleFriendRequest = (friendId) => {
       <View style={styles.suggestedSection}>
         <View style={styles.suggestedHeader}>
           <Text style={styles.suggestedTitle}>Suggested for you</Text>
-          <TouchableOpacity>
-            <Text style={styles.seeAllText}>See all</Text>
+          <TouchableOpacity onPress={() => navigation.navigate("FriendList", { data: suggestedfriends, title: "Suggested Friends",userId })}>
+          <Text style={styles.seeAllText}>See all</Text>
           </TouchableOpacity>
         </View>
         <ScrollView
@@ -237,7 +273,7 @@ const handleFriendRequest = (friendId) => {
 
             {showDropdown && (
               <View style={styles.dropdown}>
-                <TouchableOpacity
+                {/* <TouchableOpacity
                   style={styles.dropdownItem}
                   onPress={() => {
                     setShowDropdown(false);
@@ -246,7 +282,7 @@ const handleFriendRequest = (friendId) => {
                 >
                   <MessageCircle size={20} color="#262626" />
                   <Text style={styles.dropdownText}>Messages</Text>
-                </TouchableOpacity>
+                </TouchableOpacity> */}
 
                 <TouchableOpacity
                   style={styles.dropdownItem}
@@ -257,6 +293,16 @@ const handleFriendRequest = (friendId) => {
                 >
                   <LogOut size={20} color="#262626" />
                   <Text style={styles.dropdownText}>Logout</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.dropdownItem}
+                  onPress={() => {
+                    setShowDropdown(false);
+                    handleRemoveAccount();
+                  }}
+                >
+                  <LogOut size={20} color="#262626" />
+                  <Text style={styles.dropdownText}>Remove Account</Text>
                 </TouchableOpacity>
               </View>
             )}

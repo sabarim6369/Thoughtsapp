@@ -158,11 +158,16 @@ const handleFriendRequest = (friendId) => {
             source={require("../../assets/download.png")}
             style={styles.logo}
           />
+          
         </View>
         {loadingUserId ? (
           <Text>Loading...</Text> // Show this if still loading user data
         ) : polls1.length === 0 ? (
-          <Text>No polls available</Text> // Show this if no polls are found
+<View style={styles.noPollsContainer}>
+  <Icon name="chatbubble-ellipses-outline" size={50} color="#888" />
+  <Text style={styles.noPollsText}>No polls available</Text>
+  <Text style={styles.noPollsSubText}>Create or join a poll to get started!</Text>
+</View>
         ) : (
           <FlatList
             data={polls1}
@@ -677,6 +682,22 @@ const styles = StyleSheet.create({
     color: "#FFF",
     fontSize: wp('4%'),
     fontWeight: "600",
+  },
+  noPollsContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  noPollsText: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#555",
+    marginTop: 10,
+  },
+  noPollsSubText: {
+    fontSize: 14,
+    color: "#777",
+    marginTop: 5,
   },
   
 });

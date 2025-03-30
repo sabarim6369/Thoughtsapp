@@ -135,18 +135,29 @@ export default function Signup({ navigation }) {
       setLoading(true);
       const response = await axios.post(`${API_URL}/auth/signup`, formData);
   
-      // Check if response exists before accessing properties
-      if (response?.status === 201) {
-        alert(response.data.message || "Account created successfully!");
-        navigation.navigate("Login");
-      }
+      // Show exact server response in alert
+      alert(response?.data?.message || "Account created successfully!");
+      navigation.navigate("Login");
+  
     } catch (error) {
-      // Standardized error handling
-      alert(error?.response?.data?.message || "Error signing up. Please try again.");
+      let errorMessage = "Error signing up. Please try again.";
+  
+      // Handle different response scenarios
+      if (error.response) {
+        errorMessage = error.response.data?.error || error.response.data?.message || `Error: ${error.response.status}`;
+      } else if (error.request) {
+        errorMessage = "No response from server. Please check your connection.";
+      } else {
+        errorMessage = error.message;
+      }
+  
+      // Show exact response error to user
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }
   };
+  
   
   
   const togglePasswordVisibility = useCallback((key) => {

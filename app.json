@@ -4,7 +4,7 @@
     "slug": "PollingApp",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/download.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
@@ -35,7 +35,8 @@
       }
     },
     "updates": {
-      "url": "https://u.expo.dev/5daa6438-c04b-4ed9-8b7a-a4baea17d2c8"
+      "url": "https://u.expo.dev/5daa6438-c04b-4ed9-8b7a-a4baea17d2c8",
+      "fallbackToCacheTimeout": 0
     }
   }
 }

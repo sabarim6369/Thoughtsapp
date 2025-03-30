@@ -18,7 +18,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 
 const ChatDetails = ({ route }) => {
-  const { chat } = route.params;
+  const { friendid,userid,chat } = route.params;
       const navigation = useNavigation();
   
   const [message, setMessage] = useState("");
@@ -34,11 +34,12 @@ const ChatDetails = ({ route }) => {
   useEffect(() => {
     const fetchPolls = async () => {
       try {
-        setUserId(chat._id);
-        console.log(chat._id)
-        const pollIds = chat.sharedPolls.map((poll) => poll.pollId._id);
+        setUserId(userid);
+        // console.log("😐😐😐😐😐",chat)
+        // console.log(chat._id)
+        // const pollIds = chat.map((poll) => poll.pollId._id);
         const response = await axios.post(`${API_URL}/Poll/getPollswithids`, {
-          pollIds,userId:chat._id
+          friendId:friendid,userId:userid
         });
 
         setPolls(response.data.polls);
@@ -57,12 +58,11 @@ useEffect(() => {
       axios.get(`${API_URL}/friend/list/${userId}`)
           .then(response => {
               console.log("\n\nFriend List:", response.data);
-              // Ensure `friends` exists and is an array before setting state
               setFriendList(Array.isArray(response.data.friends) ? response.data.friends : []);
           })
           .catch(error => {
               console.error("Error fetching friends:", error);
-              setFriendList([]); // Prevent undefined issues
+              setFriendList([]);
           });
   }
 }, [userId]);
@@ -174,8 +174,8 @@ console.log("😍😍😍😍😍😂😂😂😂",selectedPoll.id)
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.username}>{chat.username}</Text>
-        <Image source={{ uri: chat.profilePic }} style={styles.profilePic} />
+        <Text style={styles.username}>{chat.sharedPersonId?.username}</Text>
+        <Image source={{ uri: chat.profilePic||"https://via.placeholder.com/50" }} style={styles.profilePic} />
       </View>
 
       <FlatList
@@ -203,61 +203,55 @@ console.log("😍😍😍😍😍😂😂😂😂",selectedPoll.id)
         </View>
         <Text style={styles.question}>{item.question}</Text>
 
-           {item.options.map((option, index) => {
-                                  const isSelected =
-                                    selectedPolls[item.id] === index || option.marked;
-                                  const totalVotes = item.options.reduce(
-                                    (sum, opt) => sum + opt.votes,
-                                    0
-                                  ); // Calculate total votes
-                                  const votePercentage =
-                                    totalVotes > 0
-                                      ? ((option.votes / totalVotes) * 100).toFixed(1)
-                                      : 0;
-       
-                                      const hasVoted = item.options.some(opt => opt.marked);
-       
-                                  return (
-                                    <TouchableOpacity
-                                      key={index}
-                                      style={[
-                                        styles.optionButton,
-                                        isSelected ? styles.selectedOption : null,
-                                      ]}
-                                      onPress={() => handleVote(item.id, index)}
-                                      disabled={option.marked}
-                                    >
-                                      <View style={styles.optionContent}>
-                                        <Text
-                                          style={[
-                                            styles.optionText,
-                                            isSelected
-                                              ? styles.selectedOptionText
-                                              : styles.unselectedOptionText,
-                                          ]}
-                                        >
-                                          {option.text} {option.marked && " ✔"}
-                                        </Text>
-       
-                                        {hasVoted && (
-                                          <Text
-                                            style={[
-                                              styles.votePercentage,
-                                              isSelected
-                                                ? styles.selectedOptionText
-                                                : styles.unselectedOptionText,
-                                            ]}
-                                          >
-                                            {option.votes} votes • {votePercentage}%
-                                          </Text>
-                                        )}
-                                      </View>
-                                    </TouchableOpacity>
-                                  );
-                                })}
+        {item.options.map((option, index) => {
+          const isSelected = selectedPolls[item.id] === index || option.marked;
+          const totalVotes = item.options.reduce(
+            (sum, opt) => sum + opt.votes,
+            0
+          ); // Calculate total votes
+          const votePercentage =
+            totalVotes > 0 ? ((option.votes / totalVotes) * 100).toFixed(1) : 0;
 
+          const hasVoted = item.options.some((opt) => opt.marked);
 
+          return (
+            <TouchableOpacity
+              key={index}
+              style={[
+                styles.optionButton,
+                isSelected ? styles.selectedOption : null,
+              ]}
+              onPress={() => handleVote(item.id, index)}
+              disabled={option.marked}
+            >
+              <View style={styles.optionContent}>
+                <Text
+                  style={[
+                    styles.optionText,
+                    isSelected
+                      ? styles.selectedOptionText
+                      : styles.unselectedOptionText,
+                  ]}
+                >
+                  {option.text} {option.marked && " ✔"}
+                </Text>
 
+                {hasVoted && (
+                  <Text
+                    style={[
+                      styles.votePercentage,
+                      isSelected
+                        ? styles.selectedOptionText
+                        : styles.unselectedOptionText,
+                    ]}
+                  >
+                    {option.votes} votes • {votePercentage}%
+                  </Text>
+                )}
+              </View>
+            </TouchableOpacity>
+          );
+        })}
 
         <View style={styles.actionIcons}>
           <TouchableOpacity
