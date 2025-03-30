@@ -5,8 +5,8 @@ import { LinearGradient } from "expo-linear-gradient";
 
 const messages = [
   "The human brain generates an estimated 6,000 to 70,000 thoughts per day",
-  "Your brain is capable of processing 11 million bits of information per second",
-  "Neurons in the brain transmit information at speeds up to 250 mph",
+  "A snapshot of billion thoughts",
+  "Welcome to Thoughts",
 ];
 
 const WelcomeScreen = () => {
