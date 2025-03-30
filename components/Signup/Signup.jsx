@@ -161,17 +161,17 @@ export default function Signup({ navigation }) {
   
   
   const togglePasswordVisibility = useCallback((key) => {
-    setPasswordVisibility(prev => ({
-      ...prev,
-      [key]: !prev[key] // Toggle visibility for this specific field
-    }));
-  }, []);
+    setPasswordVisibility((prev) => ({ ...prev, [key]: !prev[key] }));
+  }, [setPasswordVisibility]);
   
+  
+  const memoizedFormData = useMemo(() => formData, [formData]);
+
   const renderInputField = useCallback(({ field }) => (
     <InputField
       key={field.key}
       field={field}
-      value={formData[field.key]}
+      value={memoizedFormData[field.key]}
       onChangeText={(value) => handleChange(field.key, value)}
       isActive={activeField === field.key}
       onFocus={() => setActiveField(field.key)}
@@ -179,7 +179,7 @@ export default function Signup({ navigation }) {
       passwordVisible={passwordVisibility[field.key] || false}
       togglePasswordVisibility={() => togglePasswordVisibility(field.key)}
     />
-  ), [formData, activeField, passwordVisibility, handleChange, togglePasswordVisibility]);
+  ), [memoizedFormData, activeField, passwordVisibility, handleChange, togglePasswordVisibility]);
   
   const headerContent = useMemo(() => (
     <View style={styles.header}>

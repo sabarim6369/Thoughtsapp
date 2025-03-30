@@ -74,7 +74,6 @@ const handlenavigate=(item,chat)=>{
         <Text style={styles.title}>Messages</Text>
       </View>
 
-      {/* Loading Indicator */}
       {loading ? (
         <ActivityIndicator size="large" color="#007AFF" style={{ marginTop: 20 }} />
       ) : !chats ||chats.length === 0 ? (

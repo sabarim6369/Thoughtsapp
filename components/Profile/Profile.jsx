@@ -4,8 +4,10 @@ import axios from "axios";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
 import API_URL from "../../api";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { MessageCircle, ArrowLeft, Send, Plus, Settings, LogOut } from 'lucide-react-native';
+import { MessageCircle, ArrowLeft, Send, Plus, Settings, LogOut, Pen } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
+import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
 
 export default function Profile() {
     const [friends, setFriends] = useState([]);
@@ -23,7 +25,9 @@ export default function Profile() {
     const [showDropdown, setShowDropdown] = useState(false);
     const[suggestedfriends,setsuggestedfriends]=useState([]);
     const[totalpolls,settototalpolls]=useState();
-
+    const [passwordModalVisible, setPasswordModalVisible] = useState(false);
+    const [oldPassword, setOldPassword] = useState("");
+    const [newPassword, setNewPassword] = useState("");
   
     useEffect(() => {
         const fetchUserId = async () => {
@@ -84,7 +88,51 @@ export default function Profile() {
             setLoading(false);
         }
     };
-
+    const pickImage = async () => {
+      try {
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          aspect: [1, 1],
+          quality: 1,
+        });
+    
+        if (!result.canceled) {
+          const uri = result.assets[0].uri;
+          console.log("Image URI:", uri);
+    
+          // Read the file content into base64
+          const fileInfo = await FileSystem.readAsStringAsync(uri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+    
+          // const formData = new FormData();
+          // formData.append('profilePic', {
+          //   uri,
+          //   type: 'image/jpeg',  // You can dynamically determine the type based on file extension
+          //   name: uri.split('/').pop(),
+          // });
+          // formData.append('userId', userId);
+    
+          // Now send the FormData to the backend
+          const response = await axios.post(`${API_URL}/auth/upload-profile-pic`,{uri,userId});
+    
+          if (response.status === 200) {
+            setuserdata(prev => ({
+              ...prev,
+              profilePic: response.data.profilePic,
+            }));
+            Alert.alert("Success", "Profile picture updated successfully!");
+          }
+        }
+      } catch (error) {
+        console.error("Error uploading image:", error);
+        Alert.alert("Error", "Failed to update profile picture");
+      }
+    };
+    
+    
+    
     const handleSave = async () => {
         try {
             const response = await axios.post(`${API_URL}/auth/edit`, {
@@ -160,8 +208,29 @@ export default function Profile() {
           ]
         );
       };
-    
-
+      const handleChangePassword = async () => {
+        try {
+          const response = await axios.post(`${API_URL}/auth/change-password`, {
+            userId,
+            oldPassword,
+            newPassword,
+          });
+      
+          if (response.data.success) {
+            alert(response.data.message); // "Password changed successfully."
+            setPasswordModalVisible(false);
+          }
+        } catch (error) {
+          console.error("Change Password Error:", error);
+      
+          if (error.response) {
+            alert(error.response.data.error || "Failed to change password.");
+          } else {
+            alert("An error occurred. Please check your internet connection.");
+          }
+        }
+      };
+      
 const handleFriendRequest = (friendId) => {
     console.log(friendId)
     console.log(userId)
@@ -294,7 +363,18 @@ const handleFriendRequest = (friendId) => {
                   <LogOut size={20} color="#262626" />
                   <Text style={styles.dropdownText}>Logout</Text>
                 </TouchableOpacity>
+              
                 <TouchableOpacity
+  style={styles.dropdownItem}
+  onPress={() => {
+    setShowDropdown(false);
+    setPasswordModalVisible(true); // Open the password modal
+  }}
+>
+  <Settings size={20} color="#262626" />
+  <Text style={styles.dropdownText}>Change Password</Text>
+</TouchableOpacity>
+<TouchableOpacity
                   style={styles.dropdownItem}
                   onPress={() => {
                     setShowDropdown(false);
@@ -310,14 +390,20 @@ const handleFriendRequest = (friendId) => {
         </View>
 
         <View style={styles.profileSection}>
-          <Image
-            source={{
-              uri:
-                userdata?.profilePic ||
-                "https://cdn-icons-png.flaticon.com/512/149/149071.png",
-            }}
-            style={styles.profilePic}
-          />
+        <View style={styles.profilePicContainer}>
+                    <Image
+                        source={{
+                            uri: userdata?.profilePic || "https://cdn-icons-png.flaticon.com/512/149/149071.png",
+                        }}
+                        style={styles.profilePic}
+                    />
+                    <TouchableOpacity 
+                        style={styles.editProfilePicButton}
+                        // onPress={pickImage}
+                    >
+                        <Pen size={16} color="#fff" />
+                    </TouchableOpacity>
+                </View>
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>{totalpolls}</Text>
@@ -419,6 +505,40 @@ const handleFriendRequest = (friendId) => {
             />
           </View>
         </Modal>
+        <Modal
+  animationType="slide"
+  transparent={true}
+  visible={passwordModalVisible}
+  onRequestClose={() => setPasswordModalVisible(false)}
+>
+  <View style={styles.modalContainer}>
+    <View style={styles.modalContent}>
+      <Text style={styles.modalTitle}>Change Password</Text>
+      
+      <TextInput
+        style={styles.input}
+        placeholder="Old Password"
+        secureTextEntry
+        value={oldPassword}
+        onChangeText={setOldPassword}
+      />
+      
+      <TextInput
+        style={styles.input}
+        placeholder="New Password"
+        secureTextEntry
+        value={newPassword}
+        onChangeText={setNewPassword}
+      />
+      
+      <View style={styles.buttonRow}>
+        <Button title="Cancel" onPress={() => setPasswordModalVisible(false)} color="#262626" />
+        <Button title="Change" onPress={handleChangePassword} color="#0095f6" />
+      </View>
+    </View>
+  </View>
+</Modal>
+
       </ScrollView>
     );
 }
@@ -696,4 +816,26 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#262626",
   },
+  profilePicContainer: {
+    position: 'relative',
+    marginRight: 28,
+},
+profilePic: {
+    width: 86,
+    height: 86,
+    borderRadius: 43,
+},
+editProfilePicButton: {
+    position: 'absolute',
+    right: -4,
+    bottom: -4,
+    backgroundColor: '#0095f6',
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
+},
 });

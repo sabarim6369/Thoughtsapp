@@ -411,6 +411,7 @@ const styles = StyleSheet.create({
     fontSize: wp('6%'),
     fontWeight: "bold",
     color: "#000",
+    marginTop:hp("3%")
   },
   newPollButton: {
     width: wp('10%'),
@@ -419,6 +420,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#F2F2F7",
     justifyContent: "center",
     alignItems: "center",
+    marginTop:hp("3%")
+
   },
   pollList: {
     padding: wp('4%'),

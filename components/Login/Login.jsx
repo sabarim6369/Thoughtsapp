@@ -35,7 +35,7 @@ export default function Login({navigation}) {
   const [passwordError, setPasswordError] = useState("");
   const [emailError, setEmailError] = useState("");
   const [remainingTime, setRemainingTime] = useState(0);
-
+  const [generatedOtp, setGeneratedOtp] = useState("");
   // Timer for OTP resend
   React.useEffect(() => {
     let interval;
@@ -62,58 +62,60 @@ export default function Login({navigation}) {
       setEmailError("Please enter a valid email address");
       return;
     }
-
+  
     setOtpLoading(true);
     try {
-      const response = await axios.post(`${API_URL}/auth/send-otp`, {
-        email: forgotEmail
-      });
+      const response = await axios.post(`${API_URL}/auth/send-otp`, { email: forgotEmail });
+  
+      alert(response.data.message); // Show only the message
+  
       if (response.status === 200) {
+        setGeneratedOtp(response.data.otp);
         setStep(2);
         setOtpSent(true);
         setRemainingTime(60); // 60 seconds cooldown
         setOtpError("");
       }
-      else{
-        console.log(response);
-      }
     } catch (error) {
+      console.error("Error Response:", error.response);
+  
+      alert(error.response?.data?.message || "Failed to send OTP"); // Show only the error message
+  
       setOtpError(error.response?.data?.message || "Failed to send OTP");
     } finally {
       setOtpLoading(false);
     }
   };
-
-  const handleVerifyOTP = async () => {
+  
+  
+  const handleVerifyOTP = () => {
     if (otp.length !== 6) {
+      alert("Please enter a valid 6-digit OTP");
       setOtpError("Please enter a valid 6-digit OTP");
       return;
     }
-
-    setOtpLoading(true);
-    try {
-      const response = await axios.post(`${API_URL}/auth/verify-otp`, {
-        email: forgotEmail,
-        otp
-      });
-      if (response.status === 200) {
-        setStep(3);
-        setOtpError("");
-      }
-    } catch (error) {
-      setOtpError(error.response?.data?.message || "Invalid OTP");
-    } finally {
-      setOtpLoading(false);
+  
+    // Compare entered OTP with generated OTP
+    if (otp !== generatedOtp) {
+      alert("Invalid OTP");
+      setOtpError("Invalid OTP");
+      return;
     }
+  
+    alert("OTP verified successfully!");
+    setStep(3); // Proceed to the next step
+    setOtpError(""); // Clear any previous errors
   };
+  
+  
 
   const handleResetPassword = async () => {
     setPasswordError("");
     
-    if (!validatePassword(newPassword)) {
-      setPasswordError("Password must be at least 8 characters long");
-      return;
-    }
+    // if (!validatePassword(newPassword)) {
+    //   setPasswordError("Password must be at least 8 characters long");
+    //   return;
+    // }
 
     if (newPassword !== confirmPassword) {
       setPasswordError("Passwords do not match");
@@ -124,7 +126,7 @@ export default function Login({navigation}) {
     try {
       const response = await axios.post(`${API_URL}/auth/reset-password`, {
         email: forgotEmail,
-        otp,
+       
         newPassword
       });
       if (response.status === 200) {
@@ -182,7 +184,7 @@ export default function Login({navigation}) {
         return (
           <>
             <Text style={styles.modalTitle}>Forgot Password</Text>
-            <Text style={styles.modalSubtitle}>Enter your email address to receive a verification code</Text>
+            <Text style={styles.modalSubtitle}>Enter your account's email address to receive a verification code</Text>
             <Text style={styles.label}>Email</Text>
             <TextInput
               style={[styles.input, emailError && styles.inputError]}
