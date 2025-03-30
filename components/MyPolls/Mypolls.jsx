@@ -27,13 +27,16 @@ export default function Mypolls() {
     });
 
     const addOption = () => {
-      if (pollData.options.length < 10) {
+      if (pollData.options.length < 3) {
         setPollData(prev => ({
           ...prev,
           options: [...prev.options, { id: Date.now(), text: "" }]
         }));
+      } else {
+        alert("You can only add up to 3 options.");
       }
     };
+    
 
     const removeOption = (id) => {
       if (pollData.options.length > 1) {
@@ -45,6 +48,7 @@ export default function Mypolls() {
     };
 
     const updateOption = (id, text) => {
+      
       setPollData(prev => ({
         ...prev,
         options: prev.options.map(option => 
@@ -58,20 +62,29 @@ export default function Mypolls() {
         alert("Please enter a question");
         return;
       }
-
-      const validOptions = pollData.options.filter(opt => opt.text.trim());
+    
+      const validOptions = pollData.options
+        .map(opt => opt.text.trim())
+        .filter(text => text);
+    
       if (validOptions.length < 1) {
-        alert("Please add at least one options");
+        alert("Please add at least one option");
         return;
       }
-
+    
+      const uniqueOptions = new Set(validOptions);
+      if (uniqueOptions.size !== validOptions.length) {
+        alert("All options must be unique.");
+        return;
+      }
+    
       try {
         const response = await axios.post(`${API_URL}/poll/create`, {
           question: pollData.question,
-          options: validOptions.map(opt => opt.text),
+          options: validOptions,
           userId
         });
-        
+    
         setPolls(prevPolls => [...prevPolls, response.data]);
         setPollCount(prev => prev + 1);
         setPollData({
@@ -85,6 +98,7 @@ export default function Mypolls() {
         alert("Failed to create poll. Please try again.");
       }
     };
+    
 
     return (
       <Modal

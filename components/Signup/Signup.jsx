@@ -33,12 +33,12 @@ const INPUT_FIELDS = [
     placeholder: "johndoe@example.com",
     keyboardType: "email-address",
   },
-  {
-    label: "Date of Birth",
-    key: "dob",
-    icon: "calendar-outline",
-    placeholder: "YYYY-MM-DD",
-  },
+  // {
+  //   label: "Date of Birth",
+  //   key: "dob",
+  //   icon: "calendar-outline",
+  //   placeholder: "YYYY-MM-DD",
+  // },
   {
     label: "Phone Number",
     key: "phoneNumber",
@@ -113,7 +113,7 @@ export default function Signup({ navigation }) {
   const [formData, setFormData] = useState({
     username: "",
     email: "",
-    dob: "",
+    // dob: "",
     phoneNumber: "",
     password: "",
   });
@@ -128,7 +128,7 @@ export default function Signup({ navigation }) {
   const handleSubmit = async () => {
     try {
       // Input Validation
-      if (!formData.username || !formData.email || !formData.password || !formData.phoneNumber || !formData.dob) {
+      if (!formData.username || !formData.email || !formData.password || !formData.phoneNumber) {
         return alert("Please fill in all fields before submitting.");
       }
   

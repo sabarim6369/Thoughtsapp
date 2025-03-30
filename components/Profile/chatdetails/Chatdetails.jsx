@@ -153,7 +153,7 @@ const handleShare = () => {
   }
 console.log("😍😍😍😍😍😂😂😂😂",selectedPoll.id)
   axios.post(`${API_URL}/poll/sharepoll`, {
-      pollId: selectedPoll.id, // Ensure _id is used
+      pollId: selectedPoll.id, 
       userId,
       friends: selectedFriends
   })
