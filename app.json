@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "PollingApp",
-    "slug": "PollingApp",
+    "name": "Thoughts",
+    "slug": "Thoughts",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/download.png",
