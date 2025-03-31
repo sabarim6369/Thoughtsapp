@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, memo } from "react";
 import {
   View,
   Text,
@@ -33,12 +33,6 @@ const INPUT_FIELDS = [
     placeholder: "johndoe@example.com",
     keyboardType: "email-address",
   },
-  // {
-  //   label: "Date of Birth",
-  //   key: "dob",
-  //   icon: "calendar-outline",
-  //   placeholder: "YYYY-MM-DD",
-  // },
   {
     label: "Phone Number",
     key: "phoneNumber",
@@ -55,94 +49,100 @@ const INPUT_FIELDS = [
   },
 ];
 
-const InputField = React.memo(({ 
-  field, 
-  value, 
-  onChangeText, 
-  isActive, 
-  onFocus, 
-  onBlur, 
-  passwordVisible, 
-  togglePasswordVisibility 
-}) => (
-  <View style={styles.inputWrapper}>
-    <Text style={styles.label}>{field.label}</Text>
-    <View
-      style={[
-        styles.inputContainer,
-        {
-          borderColor: isActive ? "#007bff" : value ? "#28a745" : "#dee2e6",
-          backgroundColor: isActive ? "#fff" : "#f8f9fa",
-        },
-      ]}
-    >
-      <Ionicons
-        name={field.icon}
-        size={wp("5%")}
-        color={isActive ? "#007bff" : value ? "#28a745" : "#6c757d"}
-        style={styles.inputIcon}
-      />
-      <TextInput
-        style={styles.input}
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={field.placeholder}
-        keyboardType={field.keyboardType}
-        secureTextEntry={field.isPassword && !passwordVisible}
-        autoCapitalize={field.key === "email" ? "none" : "words"}
-        onFocus={onFocus}
-        onBlur={onBlur}
-      />
-      {field.isPassword && (
-        <TouchableOpacity
-          onPress={togglePasswordVisibility}
-          style={styles.eyeIcon}
-        >
-          <Ionicons
-            name={passwordVisible ? "eye-outline" : "eye-off-outline"}
-            size={wp("5%")}
-            color="#6c757d"
-          />
-        </TouchableOpacity>
-      )}
+// Memoize the InputField component
+const InputField = memo(function InputField({ field, value, onChange, passwordVisible, togglePasswordVisibility }) {
+  return (
+    <View style={styles.inputWrapper}>
+      <Text style={styles.label}>{field.label}</Text>
+      <View style={styles.inputContainer}>
+        <Ionicons
+          name={field.icon}
+          size={24}
+          color="#6c757d"
+          style={styles.inputIcon}
+        />
+        <TextInput
+          style={styles.input}
+          value={value}
+          onChangeText={onChange}
+          placeholder={field.placeholder}
+          keyboardType={field.keyboardType}
+          secureTextEntry={field.isPassword && !passwordVisible}
+          autoCapitalize={field.key === "email" ? "none" : "words"}
+        />
+        {field.isPassword && (
+          <TouchableOpacity onPress={togglePasswordVisibility} style={styles.eyeIcon}>
+            <Ionicons
+              name={passwordVisible ? "eye-outline" : "eye-off-outline"}
+              size={24}
+              color="#6c757d"
+            />
+          </TouchableOpacity>
+        )}
+      </View>
     </View>
-  </View>
-));
+  );
+});
+
+// Calculate static styles once
+const ICON_SIZE = wp("5%");
+const BUTTON_ICON_SIZE = wp("6%");
+const STYLES = {
+  scrollPaddingH: wp("5%"),
+  scrollPaddingTop: hp("5%"),
+  scrollPaddingBottom: hp("3%"),
+  headerMargin: hp("3%"),
+  backButtonSize: wp("12%"),
+  backButtonRadius: wp("6%"),
+  backButtonMargin: hp("2%"),
+  titleSize: wp("8%"),
+  titleMargin: hp("1%"),
+  subtitleSize: wp("4%"),
+  cardRadius: wp("5%"),
+  imageHeight: hp("20%"),
+  formPadding: wp("5%"),
+  inputMargin: hp("2%"),
+  labelSize: wp("3.5%"),
+  labelMargin: hp("0.5%"),
+  labelPadding: wp("1%"),
+  inputRadius: wp("3%"),
+  inputPadding: wp("3%"),
+  inputFontSize: wp("4%"),
+  buttonMargin: hp("2%"),
+  buttonPadding: hp("2%"),
+  buttonTextSize: wp("4.5%"),
+  termsMargin: hp("2%"),
+  termsFontSize: wp("3.5%"),
+};
 
 export default function Signup({ navigation }) {
   const [formData, setFormData] = useState({
     username: "",
     email: "",
-    // dob: "",
     phoneNumber: "",
     password: "",
   });
-  const [passwordVisibility, setPasswordVisibility] = useState({});
+  const [passwordVisible, setPasswordVisible] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [activeField, setActiveField] = useState(null);
 
-  const handleChange = useCallback((key, value) => {
-    setFormData(prev => ({ ...prev, [key]: value }));
+  // Memoize handlers
+  const handleTogglePassword = useCallback(() => {
+    setPasswordVisible(prev => !prev);
   }, []);
 
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     try {
-      // Input Validation
       if (!formData.username || !formData.email || !formData.password || !formData.phoneNumber) {
-        return alert("Please fill in all fields before submitting.");
+        alert("Please fill in all fields before submitting.");
+        return;
       }
-  
+
       setLoading(true);
       const response = await axios.post(`${API_URL}/auth/signup`, formData);
-  
-      // Show exact server response in alert
       alert(response?.data?.message || "Account created successfully!");
       navigation.navigate("Login");
-  
     } catch (error) {
       let errorMessage = "Error signing up. Please try again.";
-  
-      // Handle different response scenarios
       if (error.response) {
         errorMessage = error.response.data?.error || error.response.data?.message || `Error: ${error.response.status}`;
       } else if (error.request) {
@@ -150,65 +150,22 @@ export default function Signup({ navigation }) {
       } else {
         errorMessage = error.message;
       }
-  
-      // Show exact response error to user
       alert(errorMessage);
     } finally {
       setLoading(false);
     }
-  };
-  
-  
-  
-  const togglePasswordVisibility = useCallback((key) => {
-    setPasswordVisibility((prev) => ({ ...prev, [key]: !prev[key] }));
-  }, [setPasswordVisibility]);
-  
-  
-  const memoizedFormData = useMemo(() => formData, [formData]);
+  }, [formData, navigation]);
 
-  const renderInputField = useCallback(({ field }) => (
-    <InputField
-      key={field.key}
-      field={field}
-      value={memoizedFormData[field.key]}
-      onChangeText={(value) => handleChange(field.key, value)}
-      isActive={activeField === field.key}
-      onFocus={() => setActiveField(field.key)}
-      onBlur={() => setActiveField(null)}
-      passwordVisible={passwordVisibility[field.key] || false}
-      togglePasswordVisibility={() => togglePasswordVisibility(field.key)}
-    />
-  ), [memoizedFormData, activeField, passwordVisibility, handleChange, togglePasswordVisibility]);
-  
-  const headerContent = useMemo(() => (
-    <View style={styles.header}>
-      <TouchableOpacity
-        onPress={() => navigation.goBack()}
-        style={styles.backButton}
-      >
-        <Ionicons name="arrow-back" size={wp("6%")} color="white" />
-      </TouchableOpacity>
-      <Text style={styles.title}>Create Account</Text>
-      <TouchableOpacity onPress={() => navigation.navigate("Login")}>
-        <Text style={styles.subtitle}>
-          Already have an account?{" "}
-          <Text style={styles.link}>Login</Text>
-        </Text>
-      </TouchableOpacity>
-    </View>
-  ), [navigation]);
-
-  const formFields = useMemo(() => 
-    INPUT_FIELDS.map((field, index) => renderInputField({ field, index })),
-    [renderInputField]
-  );
+  // Memoize input change handler creator
+  const createChangeHandler = useCallback((key) => {
+    return (value) => setFormData(prev => ({ ...prev, [key]: value }));
+  }, []);
 
   return (
     <LinearGradient
-    colors={["#rgba(7, 242, 223, 1)", "#rgba(69, 143, 208, 1)"]}
-    style={styles.gradient}
-  >
+      colors={["#rgba(7, 242, 223, 1)", "#rgba(69, 143, 208, 1)"]}
+      style={styles.gradient}
+    >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.container}
@@ -217,7 +174,21 @@ export default function Signup({ navigation }) {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
-          {headerContent}
+          <View style={styles.header}>
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={styles.backButton}
+            >
+              <Ionicons name="arrow-back" size={BUTTON_ICON_SIZE} color="white" />
+            </TouchableOpacity>
+            <Text style={styles.title}>Create Account</Text>
+            <TouchableOpacity onPress={() => navigation.navigate("Login")}>
+              <Text style={styles.subtitle}>
+                Already have an account?{" "}
+                <Text style={styles.link}>Login</Text>
+              </Text>
+            </TouchableOpacity>
+          </View>
 
           <View style={styles.card}>
             <Image
@@ -225,7 +196,16 @@ export default function Signup({ navigation }) {
               style={styles.backgroundImage}
             />
             <View style={styles.formContainer}>
-              {formFields}
+              {INPUT_FIELDS.map((field) => (
+                <InputField
+                  key={field.key}
+                  field={field}
+                  value={formData[field.key]}
+                  onChange={createChangeHandler(field.key)}
+                  passwordVisible={field.isPassword && passwordVisible}
+                  togglePasswordVisibility={handleTogglePassword}
+                />
+              ))}
 
               <View style={styles.buttonContainer}>
                 <TouchableOpacity
@@ -261,30 +241,30 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: wp("5%"),
-    paddingTop: hp("5%"),
-    paddingBottom: hp("3%"),
+    paddingHorizontal: STYLES.scrollPaddingH,
+    paddingTop: STYLES.scrollPaddingTop,
+    paddingBottom: STYLES.scrollPaddingBottom,
   },
   header: {
-    marginBottom: hp("3%"),
+    marginBottom: STYLES.headerMargin,
   },
   backButton: {
-    width: wp("12%"),
-    height: wp("12%"),
-    borderRadius: wp("6%"),
+    width: STYLES.backButtonSize,
+    height: STYLES.backButtonSize,
+    borderRadius: STYLES.backButtonRadius,
     backgroundColor: "rgba(255, 255, 255, 0.2)",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: hp("2%"),
+    marginBottom: STYLES.backButtonMargin,
   },
   title: {
-    fontSize: wp("8%"),
+    fontSize: STYLES.titleSize,
     fontWeight: "bold",
     color: "white",
-    marginBottom: hp("1%"),
+    marginBottom: STYLES.titleMargin,
   },
   subtitle: {
-    fontSize: wp("4%"),
+    fontSize: STYLES.subtitleSize,
     color: "rgba(255, 255, 255, 0.8)",
   },
   link: {
@@ -293,7 +273,7 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: "white",
-    borderRadius: wp("5%"),
+    borderRadius: STYLES.cardRadius,
     overflow: "hidden",
     shadowColor: "#000",
     shadowOffset: {
@@ -306,48 +286,49 @@ const styles = StyleSheet.create({
   },
   backgroundImage: {
     width: "100%",
-    height: hp("20%"),
+    height: STYLES.imageHeight,
     resizeMode: "cover",
   },
   formContainer: {
-    padding: wp("5%"),
+    padding: STYLES.formPadding,
   },
   inputWrapper: {
-    marginBottom: hp("2%"),
+    marginBottom: STYLES.inputMargin,
   },
   label: {
-    fontSize: wp("3.5%"),
+    fontSize: STYLES.labelSize,
     color: "#495057",
-    marginBottom: hp("0.5%"),
-    marginLeft: wp("1%"),
+    marginBottom: STYLES.labelMargin,
+    marginLeft: STYLES.labelPadding,
     fontWeight: "600",
   },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1.5,
-    borderRadius: wp("3%"),
-    overflow: "hidden",
+    borderRadius: STYLES.inputRadius,
+    borderColor: "#dee2e6",
+    backgroundColor: "#f8f9fa",
   },
   inputIcon: {
-    padding: wp("3%"),
+    padding: STYLES.inputPadding,
   },
   input: {
     flex: 1,
-    fontSize: wp("4%"),
-    padding: wp("3%"),
+    fontSize: STYLES.inputFontSize,
+    padding: STYLES.inputPadding,
     color: "#495057",
   },
   eyeIcon: {
-    padding: wp("3%"),
+    padding: STYLES.inputPadding,
   },
   buttonContainer: {
-    marginTop: hp("2%"),
+    marginTop: STYLES.buttonMargin,
   },
   button: {
     backgroundColor: "#4158d0",
-    padding: hp("2%"),
-    borderRadius: wp("3%"),
+    padding: STYLES.buttonPadding,
+    borderRadius: STYLES.inputRadius,
     alignItems: "center",
     shadowColor: "#4158d0",
     shadowOffset: {
@@ -363,14 +344,14 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: "white",
-    fontSize: wp("4.5%"),
+    fontSize: STYLES.buttonTextSize,
     fontWeight: "bold",
   },
   terms: {
-    marginTop: hp("2%"),
+    marginTop: STYLES.termsMargin,
     textAlign: "center",
     color: "#6c757d",
-    fontSize: wp("3.5%"),
+    fontSize: STYLES.termsFontSize,
   },
   termsLink: {
     color: "#4158d0",

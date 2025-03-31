@@ -19,19 +19,19 @@ import { useNavigation } from '@react-navigation/native';
 import { Plus, X, Share2, ChevronRight } from 'lucide-react-native';
 
 const ChatDetails = ({ route }) => {
-  const { friendid,userid,chat } = route.params;
-      const navigation = useNavigation();
-  
+  const { friendid, userid, chat } = route.params;
+  const navigation = useNavigation();
+
   const [message, setMessage] = useState("");
   const flatListRef = useRef(null);
   const [friendList, setFriendList] = useState([]);
   const [selectedPolls, setSelectedPolls] = useState({});
   const [Polls, setPolls] = useState([]);
   const [userId, setUserId] = useState(null);
- const [modalVisible, setModalVisible] = useState(false);
-    const [selectedPoll, setSelectedPoll] = useState(null);
-        const [selectedFriends, setSelectedFriends] = useState([]);
-    
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedPoll, setSelectedPoll] = useState(null);
+  const [selectedFriends, setSelectedFriends] = useState([]);
+
   useEffect(() => {
     const fetchPolls = async () => {
       try {
@@ -39,8 +39,10 @@ const ChatDetails = ({ route }) => {
         // console.log("😐😐😐😐😐",chat)
         // console.log(chat._id)
         // const pollIds = chat.map((poll) => poll.pollId._id);
+        console.log("😎😎😎😎😎😎😎😎",friendid);
         const response = await axios.post(`${API_URL}/Poll/getPollswithids`, {
-          friendId:friendid,userId:userid
+          friendId: friendid,
+          userId: userid,
         });
         console.log(JSON.stringify(response.data.polls, null, 2));
         setPolls(response.data.polls);
@@ -52,21 +54,24 @@ const ChatDetails = ({ route }) => {
     };
 
     fetchPolls();
-  }, [chat.sharedPolls,selectedPolls]);
-  
-useEffect(() => {
-  if (userId) {
-      axios.get(`${API_URL}/friend/list/${userId}`)
-          .then(response => {
-              console.log("\n\nFriend List:", response.data);
-              setFriendList(Array.isArray(response.data.friends) ? response.data.friends : []);
-          })
-          .catch(error => {
-              console.error("Error fetching friends:", error);
-              setFriendList([]);
-          });
-  }
-}, [userId]);
+  }, [chat.sharedPolls, selectedPolls]);
+
+  useEffect(() => {
+    if (userId) {
+      axios
+        .get(`${API_URL}/friend/list/${userId}`)
+        .then((response) => {
+          console.log("\n\nFriend List:", response.data);
+          setFriendList(
+            Array.isArray(response.data.friends) ? response.data.friends : []
+          );
+        })
+        .catch((error) => {
+          console.error("Error fetching friends:", error);
+          setFriendList([]);
+        });
+    }
+  }, [userId]);
   const sendMessage = () => {
     if (message.trim().length === 0) return;
 
@@ -84,30 +89,33 @@ useEffect(() => {
     setTimeout(() => flatListRef.current.scrollToEnd({ animated: true }), 100);
   };
 
-
   const toggleFriendSelection = (id) => {
     setSelectedFriends((prev) =>
       prev.includes(id)
         ? prev.filter((selectedId) => selectedId !== id)
         : [...prev, id]
     );
-};
+  };
 
   const handleFriendRequest = (friendId) => {
-    console.log(userId,friendId)
-    axios.post(`${API_URL}/friend/sendRequest`, { senderId: userId, receiverId: friendId })
-        .then(response => {
-            alert(response.data.message); 
-            setFriendList([...friendList, friendId]);
-        })
-        .catch(error => {
-            if (error.response) {
-                alert(error.response.data.message); 
-            } else {
-                alert("Something went wrong. Please try again.");
-            }
-        });
-};
+    console.log(userId, friendId);
+    axios
+      .post(`${API_URL}/friend/sendRequest`, {
+        senderId: userId,
+        receiverId: friendId,
+      })
+      .then((response) => {
+        alert(response.data.message);
+        setFriendList([...friendList, friendId]);
+      })
+      .catch((error) => {
+        if (error.response) {
+          alert(error.response.data.message);
+        } else {
+          alert("Something went wrong. Please try again.");
+        }
+      });
+  };
   const handleVote = async (pollId, index) => {
     if (!userId) {
       alert("User ID not found!");
@@ -128,12 +136,7 @@ useEffect(() => {
 
       if (response.status === 200) {
         setSelectedPolls((prev) => ({ ...prev, [pollId]: index }));
-        const updatedPollsResponse = await axios.post(`${API_URL}/Poll/getPollswithids`, {
-          pollIds: Polls.map(p => p.id), // Fetch updated poll list
-          userId
-        });
-  
-        setPolls(updatedPollsResponse.data.polls);
+        navigation.replace("ChatDetails");
       }
     } catch (error) {
       console.error("Voting error:", error);
@@ -146,28 +149,32 @@ useEffect(() => {
   const handleSharePress = (poll) => {
     setSelectedPoll(poll);
     setModalVisible(true);
-};
-const handleShare = () => {
-  if (!selectedPoll || selectedFriends.length === 0) {
+  };
+  const handleShare = () => {
+    if (!selectedPoll || selectedFriends.length === 0) {
       alert("Select at least one friend to share.");
       return;
-  }
-console.log("😍😍😍😍😍😂😂😂😂",selectedPoll.id)
-  axios.post(`${API_URL}/poll/sharepoll`, {
-      pollId: selectedPoll.id, 
-      userId,
-      friends: selectedFriends
-  })
-  .then(response => {
-      alert(response.data.message);
-      setModalVisible(false);
-      setSelectedFriends([]);
-  })
-  .catch(error => {
-      console.error("Share Error:", error);
-      alert(error.response?.data?.message || "Failed to share poll. Please try again.");
-  });
-};
+    }
+    console.log("😍😍😍😍😍😂😂😂😂", selectedPoll.id);
+    axios
+      .post(`${API_URL}/poll/sharepoll`, {
+        pollId: selectedPoll.id,
+        userId,
+        friends: selectedFriends,
+      })
+      .then((response) => {
+        alert(response.data.message);
+        setModalVisible(false);
+        setSelectedFriends([]);
+      })
+      .catch((error) => {
+        console.error("Share Error:", error);
+        alert(
+          error.response?.data?.message ||
+            "Failed to share poll. Please try again."
+        );
+      });
+  };
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -176,103 +183,110 @@ console.log("😍😍😍😍😍😂😂😂😂",selectedPoll.id)
           <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
         <Text style={styles.username}>{chat.sharedPersonId?.username}</Text>
-        <Image source={{ uri: chat.profilePic||"https://via.placeholder.com/50" }} style={styles.profilePic} />
+        <Image
+          source={{ uri: chat.profilePic || "https://via.placeholder.com/50" }}
+          style={styles.profilePic}
+        />
       </View>
 
       <FlatList
-  data={Polls}
-  keyExtractor={(item) => item.id}
-  showsVerticalScrollIndicator={false}
-  contentContainerStyle={styles.pollList}
-  renderItem={({ item }) => {
-    const isFriend = friendList.includes(item.userId);
-    const totalVotes =
-      item.options.reduce((acc, option) => acc + option.votes, 0) || 1; // Avoid division by zero
-
-    return (
-      <View style={styles.card}>
-        <View style={styles.profileRow}>
-          <Image
-            source={{
-              uri:
-                item.profileImage ||
-                "https://cdn-icons-png.flaticon.com/512/149/149071.png",
-            }}
-            style={styles.profileImage}
-          />
-          <Text style={styles.userName}>{item.user}</Text>
-        </View>
-        <Text style={styles.question}>{item.question}</Text>
-
-        {item.options.map((option, index) => {
-          const isSelected = selectedPolls[item.id] === index || option.marked;
-          const totalVotes = item.options.reduce(
-            (sum, opt) => sum + opt.votes,
-            0
-          ); // Calculate total votes
-          const votePercentage =
-            totalVotes > 0 ? ((option.votes / totalVotes) * 100).toFixed(1) : 0;
-
-          const hasVoted = item.options.some((opt) => opt.marked);
+        data={Polls}
+        keyExtractor={(item) => item.id}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.pollList}
+        renderItem={({ item }) => {
+          const isFriend = friendList.includes(item.userId);
+          const totalVotes =
+            item.options.reduce((acc, option) => acc + option.votes, 0) || 1; // Avoid division by zero
 
           return (
-            <TouchableOpacity
-              key={index}
-              style={[
-                styles.optionButton,
-                isSelected ? styles.selectedOption : null,
-              ]}
-              onPress={() => handleVote(item.id, index)}
-              disabled={option.marked}
-            >
-              <View style={styles.optionContent}>
-                <Text
-                  style={[
-                    styles.optionText,
-                    isSelected
-                      ? styles.selectedOptionText
-                      : styles.unselectedOptionText,
-                  ]}
-                >
-                  {option.text} {option.marked && " ✔"}
-                </Text>
+            <View style={styles.card}>
+              <View style={styles.profileRow}>
+                <Image
+                  source={{
+                    uri:
+                      item.profileImage ||
+                      "https://cdn-icons-png.flaticon.com/512/149/149071.png",
+                  }}
+                  style={styles.profileImage}
+                />
+                <Text style={styles.userName}>{item.user}</Text>
+              </View>
+              <Text style={styles.question}>{item.question}</Text>
 
-                {hasVoted && (
-                  <Text
+              {item.options.map((option, index) => {
+                const isSelected =
+                  selectedPolls[item.id] === index || option.marked;
+                const totalVotes = item.options.reduce(
+                  (sum, opt) => sum + opt.votes,
+                  0
+                ); // Calculate total votes
+                const votePercentage =
+                  totalVotes > 0
+                    ? ((option.votes / totalVotes) * 100).toFixed(1)
+                    : 0;
+
+                const hasVoted = item.options.some((opt) => opt.marked);
+
+                return (
+                  <TouchableOpacity
+                    key={index}
                     style={[
-                      styles.votePercentage,
-                      isSelected
-                        ? styles.selectedOptionText
-                        : styles.unselectedOptionText,
+                      styles.optionButton,
+                      isSelected ? styles.selectedOption : null,
                     ]}
+                    onPress={() => handleVote(item.id, index)}
+                    disabled={option.marked}
                   >
-                    {option.votes} votes • {votePercentage}%
-                  </Text>
+                    <View style={styles.optionContent}>
+                      <Text
+                        style={[
+                          styles.optionText,
+                          isSelected
+                            ? styles.selectedOptionText
+                            : styles.unselectedOptionText,
+                        ]}
+                      >
+                        {option.text} {option.marked && " ✔"}
+                      </Text>
+
+                      {hasVoted && (
+                        <Text
+                          style={[
+                            styles.votePercentage,
+                            isSelected
+                              ? styles.selectedOptionText
+                              : styles.unselectedOptionText,
+                          ]}
+                        >
+                          {option.votes} votes • {votePercentage}%
+                        </Text>
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+
+              <View style={styles.actionIcons}>
+                <TouchableOpacity
+                  onPress={() => handleSharePress(item)}
+                  style={styles.iconSpacing}
+                >
+                  <Icon name="share-social-outline" size={24} color="#007bff" />
+                </TouchableOpacity>
+
+                {!isFriend && (
+                  <TouchableOpacity
+                    onPress={() => handleFriendRequest(item.userid)}
+                  >
+                    <Icon name="person-add-outline" size={24} color="#007bff" />
+                  </TouchableOpacity>
                 )}
               </View>
-            </TouchableOpacity>
+            </View>
           );
-        })}
-
-        <View style={styles.actionIcons}>
-          <TouchableOpacity
-            onPress={() => handleSharePress(item)}
-            style={styles.iconSpacing}
-          >
-            <Icon name="share-social-outline" size={24} color="#007bff" />
-          </TouchableOpacity>
-
-          {!isFriend && (
-            <TouchableOpacity onPress={() => handleFriendRequest(item.userid)}>
-              <Icon name="person-add-outline" size={24} color="#007bff" />
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-    );
-  }}
-/>
-
+        }}
+      />
 
       {/* Message Input */}
       <View style={styles.inputContainer}>
@@ -309,19 +323,23 @@ console.log("😍😍😍😍😍😂😂😂😂",selectedPoll.id)
                 <TouchableOpacity
                   style={[
                     styles.friendItem,
-                    selectedFriends.includes(item._id) && styles.selectedFriend
+                    selectedFriends.includes(item._id) && styles.selectedFriend,
                   ]}
                   onPress={() => toggleFriendSelection(item._id)}
                 >
                   <Image
-                    source={{ uri: item.profilePic || "https://via.placeholder.com/50" }}
+                    source={{
+                      uri: item.profilePic || "https://via.placeholder.com/50",
+                    }}
                     style={styles.friendAvatar}
                   />
                   <Text style={styles.friendName}>{item.username}</Text>
-                  <View style={[
-                    styles.checkbox,
-                    selectedFriends.includes(item._id) && styles.checkedBox
-                  ]}>
+                  <View
+                    style={[
+                      styles.checkbox,
+                      selectedFriends.includes(item._id) && styles.checkedBox,
+                    ]}
+                  >
                     {selectedFriends.includes(item._id) && (
                       <ChevronRight size={16} color="#FFF" />
                     )}
@@ -333,13 +351,14 @@ console.log("😍😍😍😍😍😂😂😂😂",selectedPoll.id)
             <TouchableOpacity
               style={[
                 styles.shareConfirmButton,
-                { opacity: selectedFriends.length === 0 ? 0.5 : 1 }
+                { opacity: selectedFriends.length === 0 ? 0.5 : 1 },
               ]}
               onPress={handleShare}
               disabled={selectedFriends.length === 0}
             >
               <Text style={styles.shareConfirmText}>
-                Share with {selectedFriends.length} friend{selectedFriends.length !== 1 ? 's' : ''}
+                Share with {selectedFriends.length} friend
+                {selectedFriends.length !== 1 ? "s" : ""}
               </Text>
             </TouchableOpacity>
           </View>

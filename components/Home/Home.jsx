@@ -1,4 +1,4 @@
-import React, { useState,useEffect} from "react";
+import React, { useState,useEffect,useRef} from "react";
 import { View, Text, StyleSheet, Image, TouchableOpacity, FlatList,Modal,Button } from "react-native";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
 import Icon from "react-native-vector-icons/Ionicons"; 
@@ -6,9 +6,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import API_URL from "../../api";
 import axios from "axios";
 import { Plus, X, Share2, ChevronRight } from 'lucide-react-native';
+import { useNavigation,useRoute } from '@react-navigation/native';
 
 
 export default function Home() {
+  const route = useRoute(); // Get route params
+
+      const navigation = useNavigation();
     const [selectedPolls, setSelectedPolls] = useState({}); // Store selected options
         const [userId, setUserId] = useState(null);
         const [loadingUserId, setLoadingUserId] = useState(true); 
@@ -17,7 +21,10 @@ export default function Home() {
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedPoll, setSelectedPoll] = useState(null);
     const [selectedFriends, setSelectedFriends] = useState([]);
-
+    const scrollRef = useRef(null);
+    const [scrollY, setScrollY] = useState(0);
+    
+   
  useEffect(() => {
     const fetchUserId = async () => {
         try {
@@ -67,7 +74,17 @@ useEffect(() => {
             });
     }
 }, [userId]);
+useEffect(() => {
+  if (route.params?.scrollToY && scrollRef.current) {
+    setTimeout(() => {
+      scrollRef.current.scrollTo({ y: route.params.scrollToY, animated: false });
+    }, 100); // Delay for smooth restore
+  }
+}, [route.params?.scrollToY]);
 
+const handleScroll = (event) => {
+  setScrollY(event.nativeEvent.contentOffset.y);
+};
 
 const handleVote = async (pollId, index) => {
     if (!userId) {
@@ -89,13 +106,10 @@ const handleVote = async (pollId, index) => {
 
         if (response.status === 200) {
           setSelectedPolls((prev) => ({ ...prev, [pollId]: index }));
-          const updatedPollsResponse = await axios.post(`${API_URL}/Poll/getPollswithids`, {
-            pollIds: polls1.map(p => p.id), // Fetch updated poll list
-            userId
-          });
-    
-          setPolls1(updatedPollsResponse.data.polls);   
-             }
+          const savedScrollY = scrollY;
+
+          navigation.replace("Home", { scrollToY: savedScrollY });
+        }
     } catch (error) {
         console.error("Voting error:", error);
         alert(error.response?.data?.message || "Failed to submit vote. Please try again.");
@@ -159,33 +173,41 @@ const handleFriendRequest = (friendId) => {
             source={require("../../assets/download.png")}
             style={styles.logo}
           />
-          
         </View>
         {loadingUserId ? (
           <Text>Loading...</Text> // Show this if still loading user data
         ) : polls1.length === 0 ? (
-<View style={styles.noPollsContainer}>
-  <Icon name="chatbubble-ellipses-outline" size={50} color="#888" />
-  <Text style={styles.noPollsText}>No polls available</Text>
-  <Text style={styles.noPollsSubText}>Create or join a poll to get started!</Text>
-</View>
+          <View style={styles.noPollsContainer}>
+            <Icon name="chatbubble-ellipses-outline" size={50} color="#888" />
+            <Text style={styles.noPollsText}>No polls available</Text>
+            <Text style={styles.noPollsSubText}>
+              Create or join a poll to get started!
+            </Text>
+          </View>
         ) : (
           <FlatList
+            ref={scrollRef} // Attach ref to FlatList
             data={polls1}
             keyExtractor={(item) => item.id}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.pollList}
+            onScroll={handleScroll} // Track scroll position
+            scrollEventThrottle={16} // Optimize performance
             renderItem={({ item }) => {
               const isFriend = friendList.includes(item.userId);
               const totalVotes =
                 item.options.reduce((acc, option) => acc + option.votes, 0) ||
-                1; // Avoid division by zero
+                1;
 
               return (
                 <View style={styles.card}>
                   <View style={styles.profileRow}>
                     <Image
-                      source={{ uri: item.profileImage }}
+                      source={{
+                        uri:
+                          item.profileImage ||
+                          "https://cdn-icons-png.flaticon.com/512/149/149071.png",
+                      }}
                       style={styles.profileImage}
                     />
                     <Text style={styles.userName}>{item.user}</Text>
@@ -198,13 +220,13 @@ const handleFriendRequest = (friendId) => {
                     const totalVotes = item.options.reduce(
                       (sum, opt) => sum + opt.votes,
                       0
-                    ); // Calculate total votes
+                    );
                     const votePercentage =
                       totalVotes > 0
                         ? ((option.votes / totalVotes) * 100).toFixed(1)
                         : 0;
 
-                        const hasVoted = item.options.some(opt => opt.marked);
+                    const hasVoted = item.options.some((opt) => opt.marked);
 
                     return (
                       <TouchableOpacity
@@ -228,7 +250,7 @@ const handleFriendRequest = (friendId) => {
                             {option.text} {option.marked && " ✔"}
                           </Text>
 
-                          {hasVoted  && (
+                          {hasVoted && (
                             <Text
                               style={[
                                 styles.votePercentage,
@@ -272,66 +294,81 @@ const handleFriendRequest = (friendId) => {
                 </View>
               );
             }}
+            onLayout={() => {
+              if (route.params?.scrollToY && scrollRef.current) {
+                scrollRef.current.scrollToOffset({
+                  offset: route.params.scrollToY,
+                  animated: false,
+                });
+              }
+            }}
           />
         )}
-          <Modal
-        visible={modalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.shareModal}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Share with Friends</Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <X size={24} color="#333" />
+        <Modal
+          visible={modalVisible}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setModalVisible(false)}
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.shareModal}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Share with Friends</Text>
+                <TouchableOpacity onPress={() => setModalVisible(false)}>
+                  <X size={24} color="#333" />
+                </TouchableOpacity>
+              </View>
+
+              <FlatList
+                data={friendList}
+                keyExtractor={(item) => item._id}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={[
+                      styles.friendItem,
+                      selectedFriends.includes(item._id) &&
+                        styles.selectedFriend,
+                    ]}
+                    onPress={() => toggleFriendSelection(item._id)}
+                  >
+                    <Image
+                      source={{
+                        uri:
+                          item.profilePic || "https://via.placeholder.com/50",
+                      }}
+                      style={styles.friendAvatar}
+                    />
+                    <Text style={styles.friendName}>{item.username}</Text>
+                    <View
+                      style={[
+                        styles.checkbox,
+                        selectedFriends.includes(item._id) && styles.checkedBox,
+                      ]}
+                    >
+                      {selectedFriends.includes(item._id) && (
+                        <ChevronRight size={16} color="#FFF" />
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                )}
+              />
+
+              <TouchableOpacity
+                style={[
+                  styles.shareConfirmButton,
+                  { opacity: selectedFriends.length === 0 ? 0.5 : 1 },
+                ]}
+                onPress={handleShare}
+                disabled={selectedFriends.length === 0}
+              >
+                <Text style={styles.shareConfirmText}>
+                  Share with {selectedFriends.length} friend
+                  {selectedFriends.length !== 1 ? "s" : ""}
+                </Text>
               </TouchableOpacity>
             </View>
-
-            <FlatList
-              data={friendList}
-              keyExtractor={(item) => item._id}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={[
-                    styles.friendItem,
-                    selectedFriends.includes(item._id) && styles.selectedFriend
-                  ]}
-                  onPress={() => toggleFriendSelection(item._id)}
-                >
-                  <Image
-                    source={{ uri: item.profilePic || "https://via.placeholder.com/50" }}
-                    style={styles.friendAvatar}
-                  />
-                  <Text style={styles.friendName}>{item.username}</Text>
-                  <View style={[
-                    styles.checkbox,
-                    selectedFriends.includes(item._id) && styles.checkedBox
-                  ]}>
-                    {selectedFriends.includes(item._id) && (
-                      <ChevronRight size={16} color="#FFF" />
-                    )}
-                  </View>
-                </TouchableOpacity>
-              )}
-            />
-
-            <TouchableOpacity
-              style={[
-                styles.shareConfirmButton,
-                { opacity: selectedFriends.length === 0 ? 0.5 : 1 }
-              ]}
-              onPress={handleShare}
-              disabled={selectedFriends.length === 0}
-            >
-              <Text style={styles.shareConfirmText}>
-                Share with {selectedFriends.length} friend{selectedFriends.length !== 1 ? 's' : ''}
-              </Text>
-            </TouchableOpacity>
           </View>
-        </View>
-      </Modal>
+        </Modal>
       </View>
     );
 }

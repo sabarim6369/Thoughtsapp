@@ -285,7 +285,7 @@ const handleFriendRequest = (friendId) => {
                    <Image
                      source={{
                        uri:
-                         user.avatar ||
+                         user.profilePic ||
                          "https://cdn-icons-png.flaticon.com/512/149/149071.png",
                      }}
                      style={styles.suggestedAvatar}
@@ -324,7 +324,7 @@ const handleFriendRequest = (friendId) => {
               <Image
                 source={{
                   uri:
-                    user.avatar ||
+                    user.profilePic ||
                     "https://cdn-icons-png.flaticon.com/512/149/149071.png",
                 }}
                 style={styles.suggestedAvatar}

@@ -70,7 +70,7 @@ export default function FriendList() {
           <View style={styles.card}>
             <Image
               source={{
-                uri: item.avatar || "https://cdn-icons-png.flaticon.com/512/149/149071.png",
+                uri: item.profilePic || "https://cdn-icons-png.flaticon.com/512/149/149071.png",
               }}
               style={styles.avatar}
             />

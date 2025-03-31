@@ -49,7 +49,7 @@ export default function Messages() {
       const response = await axios.get(`${API_URL}/poll/shared-polls/${userId}`);
       if (response.status === 200) {
         console.log("API Response:", JSON.stringify(response.data, null, 2));
-        console.log(response.data.sharedPolls[0].sharedPersonId.username)
+        // console.log(response.data.sharedPolls[0].sharedPersonId.username)
         setChats(response.data.sharedPolls);
       }
     } catch (err) {
@@ -91,7 +91,7 @@ const handlenavigate=(item,chat)=>{
               <Image
                 source={{
                   uri:
-                    item.avatar || "https://cdn-icons-png.flaticon.com/512/149/149071.png",
+                  item.sharedPersonId?.profilePic || "https://cdn-icons-png.flaticon.com/512/149/149071.png",
                 }}
                 style={styles.avatar}
               />
