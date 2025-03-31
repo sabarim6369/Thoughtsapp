@@ -39,17 +39,28 @@ export default function Notifications() {
         setLoading(true);
         try {
             const response = await axios.get(`${API_URL}/friend/requests/${userId}`);
-            const friendRequests = response.data.friendRequests.map(request => ({
-                id: request._id,
-                type: "friendRequest",  
-                user: request.username,
-                message: "sent you a friend request",
-                status: "pending",
-                requesterId: request._id,
+            const { friendRequests, notifications: fetchedNotifications } = response.data;
+    
+            const friendRequestsFormatted = friendRequests.map(request => ({
+                id: request.id,
+                type: "friendRequest",
+                user: request.user,
+                message: request.message,
+                status: request.status,
+                requesterId: request.requesterId,
             }));
-            setNotifications(friendRequests);
+    
+            const notificationsFormatted = fetchedNotifications.map(notification => ({
+                id: notification.id,
+                type: notification.type,
+                user: notification.fromUser, 
+                message: notification.message,
+                isRead: notification.isRead,
+            }));
+    
+            setNotifications([...friendRequestsFormatted, ...notificationsFormatted]);
         } catch (error) {
-            console.error("Error fetching friend requests", error);
+            console.error("Error fetching data", error);
         }
         setLoading(false);
     };
@@ -68,7 +79,16 @@ export default function Notifications() {
             console.error("Error accepting friend request", error);
         }
     };
+    const markAsRead = async (notificationId) => {
+        try {
+            await axios.post(`${API_URL}/auth/notifications/markAsRead`, { notificationId,userId });
+            setNotifications(notifications.filter(notification => notification.id !== notificationId));
 
+        } catch (error) {
+            console.error("Error marking notification as read", error);
+        }
+    };
+    
     const handleReject = async (requesterId) => {
         try {
             await axios.post(`${API_URL}/friend/rejectRequest`, {
@@ -98,47 +118,56 @@ export default function Notifications() {
                 </View>
             ) : (
                 <FlatList
-                    data={notifications}
-                    keyExtractor={(item) => item.id}
-                    renderItem={({ item }) => (
-                        <View style={styles.notificationCard}>
-                            <Text style={styles.notificationMessage}>
-                                <Text style={styles.userName}>{item.user}</Text> {item.message}
+    data={notifications}
+    keyExtractor={(item) => item.id}
+    contentContainerStyle={{paddingBottom:hp("8%")}}
+    renderItem={({ item }) => (
+        <View style={styles.notificationCard}>
+            <Text style={styles.notificationMessage}>
+                <Text style={styles.userName}>{item.user}</Text> {item.message}
+            </Text>
+
+            {/* Friend Request Actions */}
+            {item.type === "friendRequest" && (
+                <View style={styles.friendRequestActions}>
+                    {item.status === "pending" ? (
+                        <>
+                            <TouchableOpacity
+                                style={[styles.actionButton, styles.acceptButton]}
+                                onPress={() => handleAccept(item.requesterId)}>
+                                <Text style={styles.actionButtonText}>Accept</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.actionButton, styles.rejectButton]}
+                                onPress={() => handleReject(item.requesterId)}>
+                                <Text style={styles.actionButtonText}>Reject</Text>
+                            </TouchableOpacity>
+                        </>
+                    ) : (
+                        <View style={styles.statusLabel}>
+                            <Icon
+                                name={item.status === "accepted" ? "checkmark-circle" : "close-circle"}
+                                size={22}
+                                color={item.status === "accepted" ? "#28a745" : "#FF6347"}
+                            />
+                            <Text style={styles.statusText}>
+                                {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
                             </Text>
-    
-                            {item.type === "friendRequest" && (
-                                <View style={styles.friendRequestActions}>
-                                    {item.status === "pending" ? (
-                                        <>
-                                            <TouchableOpacity
-                                                style={[styles.actionButton, styles.acceptButton]}
-                                                onPress={() => handleAccept(item.requesterId)}>
-                                                <Text style={styles.actionButtonText}>Accept</Text>
-                                            </TouchableOpacity>
-                                            <TouchableOpacity
-                                                style={[styles.actionButton, styles.rejectButton]}
-                                                onPress={() => handleReject(item.requesterId)}>
-                                                <Text style={styles.actionButtonText}>Reject</Text>
-                                            </TouchableOpacity>
-                                        </>
-                                    ) : (
-                                        <View style={styles.statusLabel}>
-                                            <Icon
-                                                name={item.status === "accepted" ? "checkmark-circle" : "close-circle"}
-                                                size={22}
-                                                color={item.status === "accepted" ? "#28a745" : "#FF6347"}
-                                            />
-                                            <Text style={styles.statusText}>
-                                                {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
-                                            </Text>
-                                        </View>
-                                    )}
-                                </View>
-                            )}
                         </View>
                     )}
-                    showsVerticalScrollIndicator={false}
-                />
+                </View>
+            )}
+
+            {/* Mark notifications as read */}
+            {item.type !== "friendRequest" && !item.isRead && (
+                <TouchableOpacity onPress={() => markAsRead(item.id)}>
+                    <Text style={{ color: "#007bff", marginTop: 5 }}>Mark as Read</Text>
+                </TouchableOpacity>
+            )}
+        </View>
+    )}
+/>
+
             )}
         </View>
     );

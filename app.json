@@ -1,14 +1,14 @@
 {
   "expo": {
     "name": "Thoughts",
-    "slug": "PollingApp",
+    "slug": "ThoughtsApp",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/download.png",
+    "icon": "./assets/download.png",  
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/download.png",  
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -20,25 +20,25 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/download.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.msabari.PollingApp",
+      "package": "com.msabari.Thoughts",
       "runtimeVersion": "1.0.0"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/download.png"  
     },
     "extra": {
+      "expo.build.android.applicationId": "com.msabari.Thoughts",
       "eas": {
-        "projectId": "5daa6438-c04b-4ed9-8b7a-a4baea17d2c8"
-      },
-      "expo.build.android.applicationId": "com.msabari.Thoughts"
-
+        "projectId": "cf0aa290-62e3-4859-8e06-5ed54f724c8b"
+      }
     },
     "updates": {
       "url": "https://u.expo.dev/5daa6438-c04b-4ed9-8b7a-a4baea17d2c8",
       "fallbackToCacheTimeout": 0
-    }
+    },
+    "owner": "msabari1"
   }
 }

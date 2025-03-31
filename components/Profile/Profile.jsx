@@ -388,7 +388,7 @@ const handleFriendRequest = (friendId) => {
   <Settings size={20} color="#262626" />
   <Text style={styles.dropdownText}>Change Password</Text>
 </TouchableOpacity>
-<TouchableOpacity
+{/* <TouchableOpacity
                   style={styles.dropdownItem}
                   onPress={() => {
                     setShowDropdown(false);
@@ -397,7 +397,7 @@ const handleFriendRequest = (friendId) => {
                 >
                   <LogOut size={20} color="#262626" />
                   <Text style={styles.dropdownText}>Remove Account</Text>
-                </TouchableOpacity>
+                </TouchableOpacity> */}
               </View>
             )}
           </View>

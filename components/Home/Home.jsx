@@ -1,4 +1,4 @@
-import React, { useState,useEffect,useRef} from "react";
+import React, { useState,useEffect} from "react";
 import { View, Text, StyleSheet, Image, TouchableOpacity, FlatList,Modal,Button } from "react-native";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
 import Icon from "react-native-vector-icons/Ionicons"; 
@@ -6,13 +6,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import API_URL from "../../api";
 import axios from "axios";
 import { Plus, X, Share2, ChevronRight } from 'lucide-react-native';
-import { useNavigation,useRoute } from '@react-navigation/native';
 
 
 export default function Home() {
-  const route = useRoute(); // Get route params
-
-      const navigation = useNavigation();
     const [selectedPolls, setSelectedPolls] = useState({}); // Store selected options
         const [userId, setUserId] = useState(null);
         const [loadingUserId, setLoadingUserId] = useState(true); 
@@ -21,10 +17,7 @@ export default function Home() {
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedPoll, setSelectedPoll] = useState(null);
     const [selectedFriends, setSelectedFriends] = useState([]);
-    const scrollRef = useRef(null);
-    const [scrollY, setScrollY] = useState(0);
-    
-   
+
  useEffect(() => {
     const fetchUserId = async () => {
         try {
@@ -51,8 +44,8 @@ useEffect(() => {
         axios
             .get(`${API_URL}/poll/getallPolls/${userId}`)
             .then((response) => {
-                console.log("API Response:", response.data);
-                setPolls1(response.data);
+              console.log("API Response:", JSON.stringify(response.data, null, 2));
+              setPolls1(response.data);
             })
             .catch((error) => {
                 console.error("API Error:", error);
@@ -74,17 +67,7 @@ useEffect(() => {
             });
     }
 }, [userId]);
-useEffect(() => {
-  if (route.params?.scrollToY && scrollRef.current) {
-    setTimeout(() => {
-      scrollRef.current.scrollTo({ y: route.params.scrollToY, animated: false });
-    }, 100); // Delay for smooth restore
-  }
-}, [route.params?.scrollToY]);
 
-const handleScroll = (event) => {
-  setScrollY(event.nativeEvent.contentOffset.y);
-};
 
 const handleVote = async (pollId, index) => {
     if (!userId) {
@@ -106,9 +89,13 @@ const handleVote = async (pollId, index) => {
 
         if (response.status === 200) {
           setSelectedPolls((prev) => ({ ...prev, [pollId]: index }));
-          const savedScrollY = scrollY;
-
-          navigation.replace("Home", { scrollToY: savedScrollY });
+          const updatedPollResponse = await axios.get(`${API_URL}/poll/getPoll/${pollId}`, {
+            params: { userId: userId }
+        });
+                  const updatedPoll = updatedPollResponse.data;
+          setPolls1((prevPolls) => prevPolls.map(poll => 
+            poll.id === pollId ? updatedPoll : poll
+        ));
         }
     } catch (error) {
         console.error("Voting error:", error);
@@ -173,41 +160,33 @@ const handleFriendRequest = (friendId) => {
             source={require("../../assets/download.png")}
             style={styles.logo}
           />
+          
         </View>
         {loadingUserId ? (
           <Text>Loading...</Text> // Show this if still loading user data
         ) : polls1.length === 0 ? (
-          <View style={styles.noPollsContainer}>
-            <Icon name="chatbubble-ellipses-outline" size={50} color="#888" />
-            <Text style={styles.noPollsText}>No polls available</Text>
-            <Text style={styles.noPollsSubText}>
-              Create or join a poll to get started!
-            </Text>
-          </View>
+<View style={styles.noPollsContainer}>
+  <Icon name="chatbubble-ellipses-outline" size={50} color="#888" />
+  <Text style={styles.noPollsText}>No polls available</Text>
+  <Text style={styles.noPollsSubText}>Create or join a poll to get started!</Text>
+</View>
         ) : (
           <FlatList
-            ref={scrollRef} // Attach ref to FlatList
             data={polls1}
             keyExtractor={(item) => item.id}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.pollList}
-            onScroll={handleScroll} // Track scroll position
-            scrollEventThrottle={16} // Optimize performance
             renderItem={({ item }) => {
               const isFriend = friendList.includes(item.userId);
               const totalVotes =
                 item.options.reduce((acc, option) => acc + option.votes, 0) ||
-                1;
+                1; // Avoid division by zero
 
               return (
                 <View style={styles.card}>
                   <View style={styles.profileRow}>
                     <Image
-                      source={{
-                        uri:
-                          item.profileImage ||
-                          "https://cdn-icons-png.flaticon.com/512/149/149071.png",
-                      }}
+                      source={{ uri: item.profileImage }}
                       style={styles.profileImage}
                     />
                     <Text style={styles.userName}>{item.user}</Text>
@@ -215,57 +194,47 @@ const handleFriendRequest = (friendId) => {
                   <Text style={styles.question}>{item.question}</Text>
 
                   {item.options.map((option, index) => {
-                    const isSelected =
-                      selectedPolls[item.id] === index || option.marked;
-                    const totalVotes = item.options.reduce(
-                      (sum, opt) => sum + opt.votes,
-                      0
-                    );
-                    const votePercentage =
-                      totalVotes > 0
-                        ? ((option.votes / totalVotes) * 100).toFixed(1)
-                        : 0;
+  const isSelected = option.marked || selectedPolls[item.id] === index;
+  const totalVotes = item.options.reduce((sum, opt) => sum + opt.votes, 0);
+  const votePercentage = totalVotes > 0 ? ((option.votes / totalVotes) * 100).toFixed(1) : 0;
 
-                    const hasVoted = item.options.some((opt) => opt.marked);
+  const hasVoted = item.userVotedOptionIndex !== -1; // Check if the user has voted
 
-                    return (
-                      <TouchableOpacity
-                        key={index}
-                        style={[
-                          styles.optionButton,
-                          isSelected ? styles.selectedOption : null,
-                        ]}
-                        onPress={() => handleVote(item.id, index)}
-                        disabled={option.marked}
-                      >
-                        <View style={styles.optionContent}>
-                          <Text
-                            style={[
-                              styles.optionText,
-                              isSelected
-                                ? styles.selectedOptionText
-                                : styles.unselectedOptionText,
-                            ]}
-                          >
-                            {option.text} {option.marked && " ✔"}
-                          </Text>
+  return (
+    <TouchableOpacity
+      key={index}
+      style={[
+        styles.optionButton,
+        isSelected ? styles.selectedOption : null,
+      ]}
+      onPress={() => handleVote(item.id, index)}
+      disabled={hasVoted} // Disable voting if user has already voted
+    >
+      <View style={styles.optionContent}>
+        <Text
+          style={[
+            styles.optionText,
+            isSelected ? styles.selectedOptionText : styles.unselectedOptionText,
+          ]}
+        >
+          {option.text} {isSelected && " ✔"}
+        </Text>
 
-                          {hasVoted && (
-                            <Text
-                              style={[
-                                styles.votePercentage,
-                                isSelected
-                                  ? styles.selectedOptionText
-                                  : styles.unselectedOptionText,
-                              ]}
-                            >
-                              {option.votes} votes • {votePercentage}%
-                            </Text>
-                          )}
-                        </View>
-                      </TouchableOpacity>
-                    );
-                  })}
+        {hasVoted && (
+          <Text
+            style={[
+              styles.votePercentage,
+              isSelected ? styles.selectedOptionText : styles.unselectedOptionText,
+            ]}
+          >
+            {option.votes} votes • {votePercentage}%
+          </Text>
+        )}
+      </View>
+    </TouchableOpacity>
+  );
+})}
+
 
                   <View style={styles.actionIcons}>
                     <TouchableOpacity
@@ -294,81 +263,66 @@ const handleFriendRequest = (friendId) => {
                 </View>
               );
             }}
-            onLayout={() => {
-              if (route.params?.scrollToY && scrollRef.current) {
-                scrollRef.current.scrollToOffset({
-                  offset: route.params.scrollToY,
-                  animated: false,
-                });
-              }
-            }}
           />
         )}
-        <Modal
-          visible={modalVisible}
-          animationType="slide"
-          transparent={true}
-          onRequestClose={() => setModalVisible(false)}
-        >
-          <View style={styles.modalContainer}>
-            <View style={styles.shareModal}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Share with Friends</Text>
-                <TouchableOpacity onPress={() => setModalVisible(false)}>
-                  <X size={24} color="#333" />
-                </TouchableOpacity>
-              </View>
-
-              <FlatList
-                data={friendList}
-                keyExtractor={(item) => item._id}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={[
-                      styles.friendItem,
-                      selectedFriends.includes(item._id) &&
-                        styles.selectedFriend,
-                    ]}
-                    onPress={() => toggleFriendSelection(item._id)}
-                  >
-                    <Image
-                      source={{
-                        uri:
-                          item.profilePic || "https://via.placeholder.com/50",
-                      }}
-                      style={styles.friendAvatar}
-                    />
-                    <Text style={styles.friendName}>{item.username}</Text>
-                    <View
-                      style={[
-                        styles.checkbox,
-                        selectedFriends.includes(item._id) && styles.checkedBox,
-                      ]}
-                    >
-                      {selectedFriends.includes(item._id) && (
-                        <ChevronRight size={16} color="#FFF" />
-                      )}
-                    </View>
-                  </TouchableOpacity>
-                )}
-              />
-
-              <TouchableOpacity
-                style={[
-                  styles.shareConfirmButton,
-                  { opacity: selectedFriends.length === 0 ? 0.5 : 1 },
-                ]}
-                onPress={handleShare}
-                disabled={selectedFriends.length === 0}
-              >
-                <Text style={styles.shareConfirmText}>
-                  Share with {selectedFriends.length} friend
-                  {selectedFriends.length !== 1 ? "s" : ""}
-                </Text>
+          <Modal
+        visible={modalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.shareModal}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Share with Friends</Text>
+              <TouchableOpacity onPress={() => setModalVisible(false)}>
+                <X size={24} color="#333" />
               </TouchableOpacity>
             </View>
+
+            <FlatList
+              data={friendList}
+              keyExtractor={(item) => item._id}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[
+                    styles.friendItem,
+                    selectedFriends.includes(item._id) && styles.selectedFriend
+                  ]}
+                  onPress={() => toggleFriendSelection(item._id)}
+                >
+                  <Image
+                    source={{ uri: item.profilePic || "https://via.placeholder.com/50" }}
+                    style={styles.friendAvatar}
+                  />
+                  <Text style={styles.friendName}>{item.username}</Text>
+                  <View style={[
+                    styles.checkbox,
+                    selectedFriends.includes(item._id) && styles.checkedBox
+                  ]}>
+                    {selectedFriends.includes(item._id) && (
+                      <ChevronRight size={16} color="#FFF" />
+                    )}
+                  </View>
+                </TouchableOpacity>
+              )}
+            />
+
+            <TouchableOpacity
+              style={[
+                styles.shareConfirmButton,
+                { opacity: selectedFriends.length === 0 ? 0.5 : 1 }
+              ]}
+              onPress={handleShare}
+              disabled={selectedFriends.length === 0}
+            >
+              <Text style={styles.shareConfirmText}>
+                Share with {selectedFriends.length} friend{selectedFriends.length !== 1 ? 's' : ''}
+              </Text>
+            </TouchableOpacity>
           </View>
-        </Modal>
+        </View>
+      </Modal>
       </View>
     );
 }
@@ -471,9 +425,7 @@ const styles = StyleSheet.create({
   iconSpacing: {
     marginRight: 10,
   },
-  unselectedOptionText: {
-    color: "rgba(0, 123, 255, 0.5)",
-  },
+ 
 
   // modalContainer: {
   //   flex: 1,
@@ -586,9 +538,7 @@ const styles = StyleSheet.create({
   selectedOption: {
     backgroundColor: "#007bff",
   },
-  selectedOptionText: {
-    color: "#fff",
-  },
+ 
   unselectedOptionText: {
     color: "rgba(0, 123, 255, 0.8)",
   },

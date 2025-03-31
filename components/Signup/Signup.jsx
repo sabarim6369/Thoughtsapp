@@ -1,4 +1,4 @@
-import React, { useState, useCallback, memo } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -49,8 +49,7 @@ const INPUT_FIELDS = [
   },
 ];
 
-// Memoize the InputField component
-const InputField = memo(function InputField({ field, value, onChange, passwordVisible, togglePasswordVisibility }) {
+function InputField({ field, value, onChange, passwordVisible, togglePasswordVisibility }) {
   return (
     <View style={styles.inputWrapper}>
       <Text style={styles.label}>{field.label}</Text>
@@ -82,9 +81,8 @@ const InputField = memo(function InputField({ field, value, onChange, passwordVi
       </View>
     </View>
   );
-});
+}
 
-// Calculate static styles once
 const ICON_SIZE = wp("5%");
 const BUTTON_ICON_SIZE = wp("6%");
 const STYLES = {
@@ -125,12 +123,11 @@ export default function Signup({ navigation }) {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Memoize handlers
-  const handleTogglePassword = useCallback(() => {
-    setPasswordVisible(prev => !prev);
-  }, []);
+  const handleTogglePassword = () => {
+    setPasswordVisible(!passwordVisible);
+  };
 
-  const handleSubmit = useCallback(async () => {
+  const handleSubmit = async () => {
     try {
       if (!formData.username || !formData.email || !formData.password || !formData.phoneNumber) {
         alert("Please fill in all fields before submitting.");
@@ -154,22 +151,21 @@ export default function Signup({ navigation }) {
     } finally {
       setLoading(false);
     }
-  }, [formData, navigation]);
+  };
 
-  // Memoize input change handler creator
-  const createChangeHandler = useCallback((key) => {
-    return (value) => setFormData(prev => ({ ...prev, [key]: value }));
-  }, []);
+  const handleInputChange = (key, value) => {
+    setFormData({ ...formData, [key]: value });
+  };
 
   return (
     <LinearGradient
       colors={["#rgba(7, 242, 223, 1)", "#rgba(69, 143, 208, 1)"]}
       style={styles.gradient}
     >
-      <KeyboardAvoidingView
+      {/* <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.container}
-      >
+      > */}
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
@@ -201,7 +197,7 @@ export default function Signup({ navigation }) {
                   key={field.key}
                   field={field}
                   value={formData[field.key]}
-                  onChange={createChangeHandler(field.key)}
+                  onChange={(value) => handleInputChange(field.key, value)}
                   passwordVisible={field.isPassword && passwordVisible}
                   togglePasswordVisibility={handleTogglePassword}
                 />
@@ -227,7 +223,7 @@ export default function Signup({ navigation }) {
             </View>
           </View>
         </ScrollView>
-      </KeyboardAvoidingView>
+      {/* </KeyboardAvoidingView> */}
     </LinearGradient>
   );
 }
