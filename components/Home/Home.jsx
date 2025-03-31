@@ -94,7 +94,8 @@ const handleVote = async (pollId, index) => {
             userId
           });
     
-          setPolls1(updatedPollsResponse.data.polls);        }
+          setPolls1(updatedPollsResponse.data.polls);   
+             }
     } catch (error) {
         console.error("Voting error:", error);
         alert(error.response?.data?.message || "Failed to submit vote. Please try again.");

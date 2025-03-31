@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Thoughts",
-    "slug": "Thoughts",
+    "slug": "PollingApp",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/download.png",
@@ -32,7 +32,9 @@
     "extra": {
       "eas": {
         "projectId": "5daa6438-c04b-4ed9-8b7a-a4baea17d2c8"
-      }
+      },
+      "expo.build.android.applicationId": "com.msabari.Thoughts"
+
     },
     "updates": {
       "url": "https://u.expo.dev/5daa6438-c04b-4ed9-8b7a-a4baea17d2c8",

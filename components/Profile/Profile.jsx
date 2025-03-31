@@ -28,7 +28,8 @@ export default function Profile() {
     const [passwordModalVisible, setPasswordModalVisible] = useState(false);
     const [oldPassword, setOldPassword] = useState("");
     const [newPassword, setNewPassword] = useState("");
-  
+    const [image, setImage] = useState(null);
+    const [isLoading, setIsLoading] = useState(false);
     useEffect(() => {
         const fetchUserId = async () => {
             try {
@@ -89,45 +90,50 @@ export default function Profile() {
         }
     };
     const pickImage = async () => {
-      try {
-        const result = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
-          allowsEditing: true,
-          aspect: [1, 1],
-          quality: 1,
+      let result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.All, // Allow all image types
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 1,
+      });
+    
+      if (!result.canceled) {
+        const imageUri = result.assets[0].uri;
+        setImage(imageUri);
+        setIsLoading(true); 
+    
+        // Determine MIME type dynamically
+        const fileType = imageUri.split(".").pop(); 
+        const mimeType = `image/${fileType}`;
+    
+        // Create FormData
+        const formData = new FormData();
+        formData.append("profilePic", {
+          uri: imageUri,
+          name: `profile.${fileType}`,
+          type: mimeType,
         });
+        formData.append("userId", userId);
     
-        if (!result.canceled) {
-          const uri = result.assets[0].uri;
-          console.log("Image URI:", uri);
-    
-          // Read the file content into base64
-          const fileInfo = await FileSystem.readAsStringAsync(uri, {
-            encoding: FileSystem.EncodingType.Base64,
+        try {
+          const response = await axios.post(`${API_URL}/auth/upload-profile-pic`, formData, {
+            headers: { "Content-Type": "multipart/form-data" },
           });
     
-          // const formData = new FormData();
-          // formData.append('profilePic', {
-          //   uri,
-          //   type: 'image/jpeg',  // You can dynamically determine the type based on file extension
-          //   name: uri.split('/').pop(),
-          // });
-          // formData.append('userId', userId);
-    
-          // Now send the FormData to the backend
-          const response = await axios.post(`${API_URL}/auth/upload-profile-pic`,{uri,userId});
-    
-          if (response.status === 200) {
-            setuserdata(prev => ({
-              ...prev,
-              profilePic: response.data.profilePic,
-            }));
-            Alert.alert("Success", "Profile picture updated successfully!");
-          }
+          console.log("Upload success:", response.data);
+          setuserdata((prev) => ({
+            ...prev,
+            profilePic: response.data.profilePic, // Set the new Cloudinary URL
+          }));
+          Alert.alert("Success", "Profile picture updated successfully!");
+        } catch (error) {
+          console.error("Upload failed:", error);
+          Alert.alert("Error", "Image upload failed. Try again Later.");
         }
-      } catch (error) {
-        console.error("Error uploading image:", error);
-        Alert.alert("Error", "Failed to update profile picture");
+        finally {
+          setIsLoading(false); // Hide loader
+        }
+    
       }
     };
     
@@ -296,8 +302,16 @@ const handleFriendRequest = (friendId) => {
       <View style={styles.suggestedSection}>
         <View style={styles.suggestedHeader}>
           <Text style={styles.suggestedTitle}>Suggested for you</Text>
-          <TouchableOpacity onPress={() => navigation.navigate("FriendList", { data: suggestedfriends, title: "Suggested Friends",userId })}>
-          <Text style={styles.seeAllText}>See all</Text>
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate("FriendList", {
+                data: suggestedfriends,
+                title: "Suggested Friends",
+                userId,
+              })
+            }
+          >
+            <Text style={styles.seeAllText}>See all</Text>
           </TouchableOpacity>
         </View>
         <ScrollView
@@ -391,19 +405,27 @@ const handleFriendRequest = (friendId) => {
 
         <View style={styles.profileSection}>
         <View style={styles.profilePicContainer}>
-                    <Image
-                        source={{
-                            uri: userdata?.profilePic || "https://cdn-icons-png.flaticon.com/512/149/149071.png",
-                        }}
-                        style={styles.profilePic}
-                    />
-                    <TouchableOpacity 
-                        style={styles.editProfilePicButton}
-                        // onPress={pickImage}
-                    >
-                        <Pen size={16} color="#fff" />
-                    </TouchableOpacity>
-                </View>
+  <Image
+    source={{
+      uri: userdata?.profilePic || "https://cdn-icons-png.flaticon.com/512/149/149071.png",
+    }}
+    style={styles.profilePic}
+  />
+
+  {isLoading ? (
+    // Show Loader While Uploading
+    <ActivityIndicator style={styles.loader} size="large" color="#fff" />
+  ) : (
+    // Show Edit Button When Not Uploading
+    <TouchableOpacity 
+      style={styles.editProfilePicButton}
+      onPress={pickImage}
+    >
+      <Pen size={16} color="#fff" />
+    </TouchableOpacity>
+  )}
+</View>
+
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>{totalpolls}</Text>
@@ -824,6 +846,7 @@ profilePic: {
     width: 86,
     height: 86,
     borderRadius: 43,
+    resizeMode: 'cover', 
 },
 editProfilePicButton: {
     position: 'absolute',
@@ -838,4 +861,11 @@ editProfilePicButton: {
     borderWidth: 2,
     borderColor: '#fff',
 },
+loader: {
+  position: "absolute",
+  top: "50%",
+  left: "50%",
+  transform: [{ translateX: -15 }, { translateY: -15 }],
+},
+
 });
