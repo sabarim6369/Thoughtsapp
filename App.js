@@ -59,7 +59,7 @@ function Chatdetailswithfooter({ route }) {
   return (
     <View style={{ flex: 1 }}>
       <ChatDetails route={route} />
-      <Footer />
+      {/* <Footer /> */}
     </View>
   );
 }

@@ -7,7 +7,8 @@ import {
   TouchableOpacity,
   StyleSheet,
   Image,
-  Modal
+  Modal,
+  ScrollView
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
@@ -21,7 +22,8 @@ import { Plus, X, Share2, ChevronRight } from 'lucide-react-native';
 const ChatDetails = ({ route }) => {
   const { friendid,userid,chat } = route.params;
       const navigation = useNavigation();
-  
+      const [activeTab, setActiveTab] = useState('chat'); // 'chat' or 'polls'
+
   const [message, setMessage] = useState("");
   const flatListRef = useRef(null);
   const [friendList, setFriendList] = useState([]);
@@ -31,7 +33,51 @@ const ChatDetails = ({ route }) => {
  const [modalVisible, setModalVisible] = useState(false);
     const [selectedPoll, setSelectedPoll] = useState(null);
         const [selectedFriends, setSelectedFriends] = useState([]);
-    
+        const [messages, setMessages] = useState([
+          {
+            id: '1',
+            text: 'Hey there! How are you?',
+            sentByUser: false,
+            timestamp: '09:30 AM'
+          },
+          {
+            id: '2',
+            text: 'I\'m good, thanks! How about you?',
+            sentByUser: true,
+            timestamp: '09:31 AM'
+          },
+          {
+            id: '3',
+            text: 'Great! Just working on some new features.',
+            sentByUser: false,
+            timestamp: '09:32 AM'
+          },
+          {
+            id: '4',
+            text: 'That sounds interesting! Can\'t wait to see them.',
+            sentByUser: true,
+            timestamp: '09:33 AM'
+          }
+        ]);
+      useEffect(()=>{
+        const fetchMessages = async () => {
+          try {
+            console.log("👏👏👏👏👏👏",friendid,userid)
+            const response = await axios.post(`${API_URL}/friend/getchat`, {
+              userId: userid,
+              friendId: friendid,
+            });
+        
+            if (response.status === 200) {
+              console.log("😎😎😎😎😎😎😎😎😎😶‍🌫️👏👏",response.data.messages)
+              setMessages(response.data.messages);
+            }
+          } catch (error) {
+            console.error("Error fetching messages:", error);
+          }
+        };
+        fetchMessages();
+      },[userId])
   useEffect(() => {
     const fetchPolls = async () => {
       try {
@@ -67,22 +113,36 @@ useEffect(() => {
           });
   }
 }, [userId]);
-  const sendMessage = () => {
-    if (message.trim().length === 0) return;
+const sendMessage = async () => {
+  if (message.trim().length === 0) return;
 
-    chat.messages.push({
-      id: Date.now().toString(),
-      text: message,
-      sentByUser: true,
-      timestamp: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-    });
-    setMessage("");
-
-    setTimeout(() => flatListRef.current.scrollToEnd({ animated: true }), 100);
+  const newMessage = {
+    id: Date.now().toString(),
+    text: message,
+    sentBy: userid,
+    createdAt: new Date().toISOString(), // Standardized timestamp
+    messageType: "sent", // 🔹 Mark as sent
   };
+
+  try {
+    const response = await axios.post(`${API_URL}/friend/chat`, {
+      userId: userid,
+      chatWith: friendid,
+      message: message, // 🔹 Ensure the message is sent to the backend
+    });
+
+    if (response.status === 200) {
+      setMessages(prevMessages => [...prevMessages, newMessage]);
+      setMessage("");
+
+      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+    }
+  } catch (error) {
+    console.error("Error sending message:", error);
+  }
+};
+
+
 
 
   const toggleFriendSelection = (id) => {
@@ -169,6 +229,28 @@ console.log("😍😍😍😍😍😂😂😂😂",selectedPoll.id)
       alert(error.response?.data?.message || "Failed to share poll. Please try again.");
   });
 };
+const renderMessage = ({ item }) => (
+  <View
+    style={[
+      styles.messageContainer,
+      item.messageType === "sent" ? styles.sentMessage : styles.receivedMessage,
+    ]}
+  >
+    <Text style={[
+      styles.messageText,
+      { color: item.messageType === "sent" ? "#fff" : "#000" }
+    ]}>
+      {item.text}
+    </Text>
+    <Text style={[
+      styles.timestamp,
+      { color: item.messageType === "sent" ? "#fff" : "#666" }
+    ]}>
+      {new Date(item.createdAt).toLocaleTimeString()} {/* Format timestamp */}
+    </Text>
+  </View>
+);
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -177,110 +259,166 @@ console.log("😍😍😍😍😍😂😂😂😂",selectedPoll.id)
           <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
         <Text style={styles.username}>{chat.sharedPersonId?.username}</Text>
-        <Image source={{ uri: chat.profilePic||"https://via.placeholder.com/50" }} style={styles.profilePic} />
-      </View>
-
-      <FlatList
-  data={Polls}
-  keyExtractor={(item) => item.id}
-  showsVerticalScrollIndicator={false}
-  contentContainerStyle={styles.pollList}
-  renderItem={({ item }) => {
-    const isFriend = friendList.includes(item.userId);
-    const totalVotes =
-      item.options.reduce((acc, option) => acc + option.votes, 0) || 1; // Avoid division by zero
-
-    return (
-      <View style={styles.card}>
-        <View style={styles.profileRow}>
-          <Image
-            source={{
-              uri:
-                item.profileImage ||
-                "https://cdn-icons-png.flaticon.com/512/149/149071.png",
-            }}
-            style={styles.profileImage}
-          />
-          <Text style={styles.userName}>{item.user}</Text>
-        </View>
-        <Text style={styles.question}>{item.question}</Text>
-
-           {item.options.map((option, index) => {
-         const isSelected = option.marked || selectedPolls[item.id] === index;
-         const totalVotes = item.options.reduce((sum, opt) => sum + opt.votes, 0);
-         const votePercentage = totalVotes > 0 ? ((option.votes / totalVotes) * 100).toFixed(1) : 0;
-       
-         const hasVoted = item.userVotedOptionIndex !== -1; // Check if the user has voted
-       
-         return (
-           <TouchableOpacity
-             key={index}
-             style={[
-               styles.optionButton,
-               isSelected ? styles.selectedOption : null,
-             ]}
-             onPress={() => handleVote(item.id, index)}
-             disabled={hasVoted} // Disable voting if user has already voted
-           >
-             <View style={styles.optionContent}>
-               <Text
-                 style={[
-                   styles.optionText,
-                   isSelected ? styles.selectedOptionText : styles.unselectedOptionText,
-                 ]}
-               >
-                 {option.text} {isSelected && " ✔"}
-               </Text>
-       
-               {hasVoted && (
-                 <Text
-                   style={[
-                     styles.votePercentage,
-                     isSelected ? styles.selectedOptionText : styles.unselectedOptionText,
-                   ]}
-                 >
-                   {option.votes} votes • {votePercentage}%
-                 </Text>
-               )}
-             </View>
-           </TouchableOpacity>
-         );
-       })}
-       
-
-        <View style={styles.actionIcons}>
-          <TouchableOpacity
-            onPress={() => handleSharePress(item)}
-            style={styles.iconSpacing}
-          >
-            <Icon name="share-social-outline" size={24} color="#007bff" />
-          </TouchableOpacity>
-
-          {!isFriend && (
-            <TouchableOpacity onPress={() => handleFriendRequest(item.userid)}>
-              <Icon name="person-add-outline" size={24} color="#007bff" />
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-    );
-  }}
-/>
-
-
-      {/* Message Input */}
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="Message..."
-          placeholderTextColor="#888"
-          value={message}
-          onChangeText={setMessage}
+        <Image
+          source={{ uri: chat.profilePic || "https://via.placeholder.com/50" }}
+          style={styles.profilePic}
         />
-        <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
-          <Ionicons name="send" size={20} color="#fff" />
+      </View>
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === "chat" && styles.activeTab]}
+          onPress={() => setActiveTab("chat")}
+        >
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === "chat" && styles.activeTabText,
+            ]}
+          >
+            Chat
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === "polls" && styles.activeTab]}
+          onPress={() => setActiveTab("polls")}
+        >
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === "polls" && styles.activeTabText,
+            ]}
+          >
+            Polls
+          </Text>
         </TouchableOpacity>
       </View>
+      {activeTab === 'chat' ? (
+        // Chat Tab Content
+        <FlatList
+          ref={flatListRef}
+          data={messages}
+          renderItem={renderMessage}
+          keyExtractor={item => item.id}
+          contentContainerStyle={styles.chatContainer}
+          showsVerticalScrollIndicator={false}
+        />
+      ) : (
+      <FlatList
+        data={Polls}
+        keyExtractor={(item) => item.id}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.pollList}
+        renderItem={({ item }) => {
+          const isFriend = friendList.includes(item.userId);
+          const totalVotes =
+            item.options.reduce((acc, option) => acc + option.votes, 0) || 1; // Avoid division by zero
+
+          return (
+            <View style={styles.card}>
+              <View style={styles.profileRow}>
+                <Image
+                  source={{
+                    uri:
+                      item.profileImage ||
+                      "https://cdn-icons-png.flaticon.com/512/149/149071.png",
+                  }}
+                  style={styles.profileImage}
+                />
+                <Text style={styles.userName}>{item.user}</Text>
+              </View>
+              <Text style={styles.question}>{item.question}</Text>
+
+              {item.options.map((option, index) => {
+                const isSelected =
+                  option.marked || selectedPolls[item.id] === index;
+                const totalVotes = item.options.reduce(
+                  (sum, opt) => sum + opt.votes,
+                  0
+                );
+                const votePercentage =
+                  totalVotes > 0
+                    ? ((option.votes / totalVotes) * 100).toFixed(1)
+                    : 0;
+
+                const hasVoted = item.userVotedOptionIndex !== -1; // Check if the user has voted
+
+                return (
+                  <TouchableOpacity
+                    key={index}
+                    style={[
+                      styles.optionButton,
+                      isSelected ? styles.selectedOption : null,
+                    ]}
+                    onPress={() => handleVote(item.id, index)}
+                    disabled={hasVoted} // Disable voting if user has already voted
+                  >
+                    <View style={styles.optionContent}>
+                      <Text
+                        style={[
+                          styles.optionText,
+                          isSelected
+                            ? styles.selectedOptionText
+                            : styles.unselectedOptionText,
+                        ]}
+                      >
+                        {option.text} {isSelected && " ✔"}
+                      </Text>
+
+                      {hasVoted && (
+                        <Text
+                          style={[
+                            styles.votePercentage,
+                            isSelected
+                              ? styles.selectedOptionText
+                              : styles.unselectedOptionText,
+                          ]}
+                        >
+                          {option.votes} votes • {votePercentage}%
+                        </Text>
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+
+              <View style={styles.actionIcons}>
+                <TouchableOpacity
+                  onPress={() => handleSharePress(item)}
+                  style={styles.iconSpacing}
+                >
+                  <Icon name="share-social-outline" size={24} color="#007bff" />
+                </TouchableOpacity>
+
+                {!isFriend && (
+                  <TouchableOpacity
+                    onPress={() => handleFriendRequest(item.userid)}
+                  >
+                    <Icon name="person-add-outline" size={24} color="#007bff" />
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+          );
+        }}
+      />
+    )}
+      {/* Message Input */}
+      {activeTab==="chat"?(
+ <View style={styles.inputContainer}>
+ <TextInput
+   style={styles.input}
+   placeholder="Message..."
+   placeholderTextColor="#888"
+   value={message}
+   onChangeText={setMessage}
+ />
+ <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
+   <Ionicons name="send" size={20} color="#fff" />
+ </TouchableOpacity>
+</View>
+      ):
+      <></>}
+     
       <Modal
         visible={modalVisible}
         animationType="slide"
@@ -303,19 +441,23 @@ console.log("😍😍😍😍😍😂😂😂😂",selectedPoll.id)
                 <TouchableOpacity
                   style={[
                     styles.friendItem,
-                    selectedFriends.includes(item._id) && styles.selectedFriend
+                    selectedFriends.includes(item._id) && styles.selectedFriend,
                   ]}
                   onPress={() => toggleFriendSelection(item._id)}
                 >
                   <Image
-                    source={{ uri: item.profilePic || "https://via.placeholder.com/50" }}
+                    source={{
+                      uri: item.profilePic || "https://via.placeholder.com/50",
+                    }}
                     style={styles.friendAvatar}
                   />
                   <Text style={styles.friendName}>{item.username}</Text>
-                  <View style={[
-                    styles.checkbox,
-                    selectedFriends.includes(item._id) && styles.checkedBox
-                  ]}>
+                  <View
+                    style={[
+                      styles.checkbox,
+                      selectedFriends.includes(item._id) && styles.checkedBox,
+                    ]}
+                  >
                     {selectedFriends.includes(item._id) && (
                       <ChevronRight size={16} color="#FFF" />
                     )}
@@ -327,13 +469,14 @@ console.log("😍😍😍😍😍😂😂😂😂",selectedPoll.id)
             <TouchableOpacity
               style={[
                 styles.shareConfirmButton,
-                { opacity: selectedFriends.length === 0 ? 0.5 : 1 }
+                { opacity: selectedFriends.length === 0 ? 0.5 : 1 },
               ]}
               onPress={handleShare}
               disabled={selectedFriends.length === 0}
             >
               <Text style={styles.shareConfirmText}>
-                Share with {selectedFriends.length} friend{selectedFriends.length !== 1 ? 's' : ''}
+                Share with {selectedFriends.length} friend
+                {selectedFriends.length !== 1 ? "s" : ""}
               </Text>
             </TouchableOpacity>
           </View>
@@ -685,7 +828,52 @@ const styles = StyleSheet.create({
       backgroundColor: "#007bff",
     },
 
-   
+    tabContainer: {
+      flexDirection: 'row',
+      borderBottomWidth: 1,
+      borderBottomColor: '#e0e0e0',
+    },
+    tab: {
+      flex: 1,
+      paddingVertical: 15,
+      alignItems: 'center',
+    },
+    activeTab: {
+      borderBottomWidth: 2,
+      borderBottomColor: '#007AFF',
+    },
+    tabText: {
+      fontSize: 16,
+      color: '#666',
+    },
+    activeTabText: {
+      color: '#007AFF',
+      fontWeight: '600',
+    },
+    chatContainer: {
+      padding: 10,
+    },
+    messageContainer: {
+      padding: 12,
+      borderRadius: 20,
+      marginVertical: 4,
+      maxWidth: '75%',
+    },
+    sentMessage: {
+      alignSelf: 'flex-end',
+      backgroundColor: '#007AFF',
+    },
+    receivedMessage: {
+      alignSelf: 'flex-start',
+      backgroundColor: '#f0f0f0',
+    },
+    messageText: {
+      fontSize: 16,
+    },
+    timestamp: {
+      fontSize: 12,
+      marginTop: 4,
+    },
     
 });
 

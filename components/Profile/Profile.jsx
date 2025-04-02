@@ -431,14 +431,22 @@ const handleFriendRequest = (friendId) => {
               <Text style={styles.statNumber}>{totalpolls}</Text>
               <Text style={styles.statLabel}>Polls</Text>
             </View>
+            <TouchableOpacity onPress={() => navigation.navigate("FriendList", { data: friends, title: "Friends",userId })}>
+
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>{friends.length}</Text>
+
               <Text style={styles.statLabel}>Followers</Text>
             </View>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate("FriendList", { data: friends, title: "Friends",userId })}>
+
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>{friends.length}</Text>
               <Text style={styles.statLabel}>Following</Text>
             </View>
+            </TouchableOpacity>
+
           </View>
         </View>
 

@@ -4,7 +4,7 @@
     "slug": "ThoughtsApp",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/download.png",  
+    "icon": "./assets/applogo1.png",  
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
