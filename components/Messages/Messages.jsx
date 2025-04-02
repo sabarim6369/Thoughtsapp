@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  TextInput,
 } from "react-native";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -15,13 +16,20 @@ import { ArrowLeft } from "lucide-react-native";
 import { useNavigation } from "@react-navigation/native";
 import API_URL from "../../api";
 
-export default function Messages() {
+export default function Messages({route}) {
+  const { neededuser, userid } = route.params ?? {};
   const [userId, setUserId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [chats, setChats] = useState([]);
+  const [searchQuery, setSearchQuery] = useState(""); 
   const [error, setError] = useState(null);
   const navigation = useNavigation();
-
+  useEffect(() => {
+    if (neededuser) {
+      setSearchQuery(neededuser.toLowerCase()); 
+    }
+  }, [neededuser]);
+  
   useEffect(() => {
     const fetchUserId = async () => {
       try {
@@ -49,7 +57,6 @@ export default function Messages() {
       const response = await axios.get(`${API_URL}/poll/shared-polls/${userId}`);
       if (response.status === 200) {
         console.log("API Response:", JSON.stringify(response.data, null, 2));
-        // console.log(response.data.sharedPolls[0].sharedPersonId.username)
         setChats(response.data.sharedPolls);
       }
     } catch (err) {
@@ -60,10 +67,17 @@ export default function Messages() {
       setLoading(false);
     }
   };
-const handlenavigate=(item,chat)=>{
-    console.log("🤮🤮🤮🤮🤮🤮🤮🤮🤮",item);
-    navigation.navigate("ChatDetails", { friendid: item,userid:userId,chat:chat })
-}
+
+  const handleNavigate = (item, chat) => {
+    console.log("Navigating to chat:", item);
+    navigation.navigate("ChatDetails", { friendid: item, userid: userId, chat: chat });
+  };
+
+  // Filter chats based on search input
+  const filteredChats = chats.filter((chat) =>
+    chat.sharedPersonId?.username.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -74,24 +88,34 @@ const handlenavigate=(item,chat)=>{
         <Text style={styles.title}>Messages</Text>
       </View>
 
+      {/* Search Bar */}
+      <TextInput
+        style={styles.searchBar}
+        placeholder="Search by username..."
+        placeholderTextColor="#8e8e8e"
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+      />
+
       {loading ? (
         <ActivityIndicator size="large" color="#007AFF" style={{ marginTop: 20 }} />
-      ) : !chats ||chats.length === 0 ? (
-        <Text style={styles.emptyMessage}>No messages yet.</Text>
+      ) : filteredChats.length === 0 ? (
+        <Text style={styles.emptyMessage}>No messages found.</Text>
       ) : (
         <FlatList
-          data={chats}
+          data={filteredChats}
           keyExtractor={(item, index) => (item.id ? item.id.toString() : index.toString())}
           renderItem={({ item }) => (
             <TouchableOpacity
               style={styles.messageItem}
-              onPress={() => handlenavigate(item.sharedPersonId._id,item)}
+              onPress={() => handleNavigate(item.sharedPersonId._id, item)}
               activeOpacity={0.7}
             >
               <Image
                 source={{
                   uri:
-                  item.sharedPersonId?.profilePic || "https://cdn-icons-png.flaticon.com/512/149/149071.png",
+                    item.sharedPersonId?.profilePic ||
+                    "https://cdn-icons-png.flaticon.com/512/149/149071.png",
                 }}
                 style={styles.avatar}
               />
@@ -125,11 +149,21 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#262626",
     marginLeft: 16,
-    marginTop:10
+    marginTop: 10,
   },
-  arrow:{
-    marginTop:10
-
+  arrow: {
+    marginTop: 10,
+  },
+  searchBar: {
+    height: 40,
+    margin: 10,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+    fontSize: 16,
+    color: "#262626",
   },
   messageItem: {
     flexDirection: "row",
@@ -171,3 +205,4 @@ const styles = StyleSheet.create({
     color: "#8e8e8e",
   },
 });
+

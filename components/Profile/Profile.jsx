@@ -4,13 +4,14 @@ import axios from "axios";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
 import API_URL from "../../api";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { MessageCircle, ArrowLeft, Send, Plus, Settings, LogOut, Pen } from 'lucide-react-native';
+import { MessageCircle, ArrowLeft, Send, Plus, Settings, LogOut, Pen,Share2,Trash2,X,ChevronRight} from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 
-export default function Profile() {
-    const [friends, setFriends] = useState([]);
+export default function Profile({route}) {
+  const { useridofdifferentuser } = route?.params || {};
+  const [friends, setFriends] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [activeTab, setActiveTab] = useState("Posts");
@@ -30,48 +31,69 @@ export default function Profile() {
     const [newPassword, setNewPassword] = useState("");
     const [image, setImage] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
-    useEffect(() => {
+      const [polls, setPolls] = useState([]);
+      const [pollCount, setPollCount] = useState(0);
+      const[isdifferentusersprofile,setdifferentusersprofile]=useState(false);
+      useEffect(() => {
         const fetchUserId = async () => {
-            try {
-                const storedUserId = await AsyncStorage.getItem("userId");
-                if (storedUserId) {
-                    setUserId(storedUserId);
-                }
-            } catch (error) {
-                console.error("Error fetching userId:", error);
-            } finally {
-                setLoading(false);
+          try {
+            const storedUserId = await AsyncStorage.getItem("userId");
+      
+            if (useridofdifferentuser) {
+              setUserId(useridofdifferentuser);
+              
+              // Only set 'differentusersprofile' to true if it's a different user
+              setdifferentusersprofile(storedUserId !== useridofdifferentuser);
+            } else if (storedUserId) {
+              setUserId(storedUserId);
             }
+          } catch (error) {
+            console.error("Error fetching userId:", error);
+          } finally {
+            setLoading(false);
+          }
         };
+      
         fetchUserId();
-    }, []);
-
+      }, [useridofdifferentuser]);
+      
     useEffect(() => {
         if (userId) {
             const fetchData = async () => {
                 await fetchFriends();
                 await fetchsuggestedFriends();
+                await fetchPolls();
             };
             fetchData(); 
         }
     }, [userId]);
     
-
+    const fetchPolls = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/poll/getPolls/${userId}`);
+        setPolls(response.data);
+        setPollCount(response.data.length);
+      } catch (error) {
+        console.error("Error fetching polls:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
     const fetchFriends = async () => {
         try {
-            const response = await axios.get(`${API_URL}/friend/list/${userId}`);
-            if (response.status === 200) {
-                setFriends(response.data.friends || []);
-                setuserdata(response.data.user);
-                setchats(response.data.friendsWithSharedPolls);
-                settototalpolls(response.data.totalPolls)
-            }
+          const response = await axios.get(`${API_URL}/friend/list/${userId}`);
+          if (response.status === 200) {
+            setFriends(response.data.friends || []);
+            setuserdata(response.data.user);
+            setchats(response.data.friendsWithSharedPolls);
+            settototalpolls(response.data.totalPolls);
+          }
         } catch (err) {
-            console.error("Fetch error:", err.message);
-            setError("Failed to fetch data. Please try again.");
-            Alert.alert("Error", "Unable to fetch data from server");
+          console.error("Fetch error:", err.message);
+          setError("Failed to fetch data. Please try again.");
+          Alert.alert("Error", "Unable to fetch data from server");
         } finally {
-            setLoading(false);
+          setLoading(false);
         }
     };
     const fetchsuggestedFriends = async () => {
@@ -138,7 +160,36 @@ export default function Profile() {
     };
     
     
+    const handleunfollow = (id) => {
+      Alert.alert(
+        "Unfollow User",
+        "Are you sure you want to unfollow this user?",
+        [
+          {
+            text: "Cancel",
+            style: "cancel",
+          },
+          {
+            text: "Unfollow",
+            onPress: () => {
+              console.log(`Unfollowing user with ID: ${id}`);
     
+              axios
+                .post(`${API_URL}/friend/unfollow`, { senderId: userId, receiverId: id })
+                .then((response) => {
+                  alert(response.data.message);
+    
+                  // Update state: Remove the unfollowed user from the list
+                  setFriends((prevFriends) => prevFriends.filter((friend) => friend._id !== id));
+                })
+                .catch((error) => {
+                  alert(error.response?.data?.message || "Something went wrong. Please try again.");
+                });
+            },
+          },
+        ]
+      );
+    };
     const handleSave = async () => {
         try {
             const response = await axios.post(`${API_URL}/auth/edit`, {
@@ -223,7 +274,7 @@ export default function Profile() {
           });
       
           if (response.data.success) {
-            alert(response.data.message); // "Password changed successfully."
+            alert(response.data.message); 
             setPasswordModalVisible(false);
           }
         } catch (error) {
@@ -236,14 +287,58 @@ export default function Profile() {
           }
         }
       };
+      const handleButtonClick = (id,isrequested) => {
+        if (isrequested) {
+          // Show confirmation alert before canceling the request
+          Alert.alert(
+            "Cancel Request?",
+            "Are you sure you want to cancel the friend request?",
+            [
+              { text: "No", style: "cancel" },
+              {
+                text: "Yes",
+                onPress: () => cancelFriendRequest(id),
+              },
+            ]
+          );
+        } else {
+          handleFriendRequest(id);
+        }
+      };
       
+      // Cancel friend request
+const cancelFriendRequest = (id) => {
+        axios
+          .post(`${API_URL}/friend/cancel-request`, {
+            senderId: userId,
+            receiverId: id,
+          })
+          .then((response) => {
+            alert(response.data.message);
+            setsuggestedfriends((prevFriends) =>
+              prevFriends.map((friend) =>
+                friend._id === id ? { ...friend, requested: false } : friend
+              )
+            );
+            // setRefresh((prev) => !prev);
+          })
+          .catch((error) => {
+            alert(error.response?.data?.message || "Something went wrong.");
+          });
+      };
+        
 const handleFriendRequest = (friendId) => {
+  
     console.log(friendId)
     console.log(userId)
     axios.post(`${API_URL}/friend/sendRequest`, { senderId: userId, receiverId: friendId })
         .then(response => {
             alert(response.data.message); 
-            // setFriendList([...friendList, friendId]);
+            setsuggestedfriends((prevFriends)=>
+              prevFriends.map((friend)=>
+              friend._id===friendId?{...friend,requested:true}:friend
+              )
+            )
         })
         .catch(error => {
             if (error.response) {
@@ -252,6 +347,15 @@ const handleFriendRequest = (friendId) => {
                 alert("Something went wrong. Please try again.");
             }
         });
+};
+const handleEditProfile = () => {
+  setModalVisible(true); // Open edit profile modal
+};
+
+const handleSendMessage = (name) => {
+  console.log("Open chat screen"); 
+  navigation.navigate("Messages",{neededuser:name,userid:userId})
+  // Navigate to chat screen or perform your message action here
 };
 
     if (loading) {
@@ -263,8 +367,17 @@ const handleFriendRequest = (friendId) => {
        <View style={styles.suggestedSection}>
          <View style={styles.suggestedHeader}>
            <Text style={styles.suggestedTitle}>Friends</Text>
-           <TouchableOpacity onPress={() => navigation.navigate("FriendList", { data: friends, title: "Friends",userId })}>
-           <Text style={styles.seeAllText}>See all</Text>
+           <TouchableOpacity
+             onPress={() =>
+               navigation.navigate("FriendList", {
+                 data: friends,
+                 title: "Friends",
+                 userId,
+                 isdifferentusersprofile,
+               })
+             }
+           >
+             <Text style={styles.seeAllText}>See all</Text>
            </TouchableOpacity>
          </View>
          <ScrollView
@@ -281,7 +394,16 @@ const handleFriendRequest = (friendId) => {
                style={styles.suggestedScroll}
              >
                {friends.map((user) => (
-                 <View key={user.id} style={styles.suggestedCard}>
+                 <TouchableOpacity
+                   key={user.id}
+                   style={styles.suggestedCard}
+                   onPress={() =>
+                     navigation.navigate("Profile", {
+                       useridofdifferentuser: user._id,
+                       
+                     })
+                   }
+                 >
                    <Image
                      source={{
                        uri:
@@ -291,7 +413,14 @@ const handleFriendRequest = (friendId) => {
                      style={styles.suggestedAvatar}
                    />
                    <Text style={styles.suggestedUsername}>{user.username}</Text>
-                 </View>
+                   {!isdifferentusersprofile? <TouchableOpacity
+                style={styles.unfollowButton}
+                onPress={() => handleunfollow(user._id)}
+              >
+                <Text style={styles.followButtonText}>UnFollow</Text>
+              </TouchableOpacity>:<></>}
+                  
+                 </TouchableOpacity>
                ))}
              </ScrollView>
            )}
@@ -331,11 +460,84 @@ const handleFriendRequest = (friendId) => {
               />
               <Text style={styles.suggestedUsername}>{user.username}</Text>
               <TouchableOpacity
-                style={styles.followButton}
-                onPress={() => handleFriendRequest(user._id)}
+                style={[
+                  styles.followButton, // Base styles
+                  user.requested && { paddingHorizontal: 18 }, // Dynamically adjust padding
+                ]}
+                onPress={() => handleButtonClick(user._id, user.requested)}
               >
-                <Text style={styles.followButtonText}>Follow</Text>
+                <Text style={styles.followButtonText}>
+                  {user.requested ? "Requested" : "Follow"}
+                </Text>
               </TouchableOpacity>
+            </View>
+          ))}
+        </ScrollView>
+      </View>
+    );
+    const renderpolls = () => (
+      <View style={styles.suggestedSection}>
+        <View style={styles.suggestedHeader}>
+          <Text style={styles.suggestedTitle}>My Polls</Text>
+          {!isdifferentusersprofile?<TouchableOpacity onPress={() => navigation.navigate("Mypolls")}>
+            
+            <Text style={styles.seeAllText}>See all</Text>
+          </TouchableOpacity>:<></>}
+          
+        </View>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          style={styles.pollList}
+        >
+          {polls.map((item) => (
+            <View key={item._id} style={styles.pollCard}>
+              <Text style={styles.pollQuestion}>{item.question}</Text>
+              <View style={styles.pollOptions}>
+                {item.options?.map((option) => (
+                  <View key={option._id} style={styles.optionBar}>
+                    <View
+                      style={[
+                        styles.optionProgress,
+                        {
+                          width: `${
+                            (option.votes /
+                              Math.max(
+                                ...item.options.map((o) => o.votes),
+                                1
+                              )) *
+                            100
+                          }%`,
+                        },
+                      ]}
+                    />
+                    <View style={styles.optionContent}>
+                      <Text style={styles.optionText}>{option.text}</Text>
+                      <Text style={styles.voteCount}>{option.votes}</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+
+              {/* Action Buttons */}
+              <View style={styles.actionButtons}>
+                {/* Share Button */}
+                <TouchableOpacity
+                  style={styles.shareButton}
+                  onPress={() => handleSharePress(item)}
+                >
+                  <Share2 size={20} color="#007AFF" />
+                  <Text style={styles.shareText}>Share Poll</Text>
+                </TouchableOpacity>
+
+                {!isdifferentusersprofile? <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={() => handleDeletePoll(item._id)}
+                >
+                  <Trash2 size={20} color="red" />
+                  <Text style={styles.deleteText}>Delete</Text>
+                </TouchableOpacity>:<></>}
+               
+              </View>
             </View>
           ))}
         </ScrollView>
@@ -377,18 +579,18 @@ const handleFriendRequest = (friendId) => {
                   <LogOut size={20} color="#262626" />
                   <Text style={styles.dropdownText}>Logout</Text>
                 </TouchableOpacity>
-              
-                <TouchableOpacity
-  style={styles.dropdownItem}
-  onPress={() => {
-    setShowDropdown(false);
-    setPasswordModalVisible(true); // Open the password modal
-  }}
->
-  <Settings size={20} color="#262626" />
-  <Text style={styles.dropdownText}>Change Password</Text>
-</TouchableOpacity>
-{/* <TouchableOpacity
+{!isdifferentusersprofile?<TouchableOpacity
+                  style={styles.dropdownItem}
+                  onPress={() => {
+                    setShowDropdown(false);
+                    setPasswordModalVisible(true); 
+                  }}
+                >
+                  <Settings size={20} color="#262626" />
+                  <Text style={styles.dropdownText}>Change Password</Text>
+                </TouchableOpacity>:<></>}
+                
+                {/* <TouchableOpacity
                   style={styles.dropdownItem}
                   onPress={() => {
                     setShowDropdown(false);
@@ -404,65 +606,99 @@ const handleFriendRequest = (friendId) => {
         </View>
 
         <View style={styles.profileSection}>
-        <View style={styles.profilePicContainer}>
-  <Image
-    source={{
-      uri: userdata?.profilePic || "https://cdn-icons-png.flaticon.com/512/149/149071.png",
-    }}
-    style={styles.profilePic}
-  />
+          <View style={styles.profilePicContainer}>
+            <Image
+              source={{
+                uri:
+                  userdata?.profilePic ||
+                  "https://cdn-icons-png.flaticon.com/512/149/149071.png",
+              }}
+              style={styles.profilePic}
+            />
 
-  {isLoading ? (
-    // Show Loader While Uploading
-    <ActivityIndicator style={styles.loader} size="large" color="#fff" />
-  ) : (
-    // Show Edit Button When Not Uploading
-    <TouchableOpacity 
-      style={styles.editProfilePicButton}
-      onPress={pickImage}
-    >
-      <Pen size={16} color="#fff" />
-    </TouchableOpacity>
-  )}
-</View>
+            {isLoading ? (
+              // Show Loader While Uploading
+              <ActivityIndicator
+                style={styles.loader}
+                size="large"
+                color="#fff"
+              />
+            ) : (
+              !isdifferentusersprofile && (
+
+              <TouchableOpacity
+                style={styles.editProfilePicButton}
+                onPress={pickImage}
+              >
+
+                <Pen size={16} color="#fff" />
+              </TouchableOpacity>
+              )
+            )}
+          </View>
 
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>{totalpolls}</Text>
               <Text style={styles.statLabel}>Polls</Text>
             </View>
-            <TouchableOpacity onPress={() => navigation.navigate("FriendList", { data: friends, title: "Friends",userId })}>
+            <TouchableOpacity
+              onPress={() =>
+                navigation.navigate("FriendList", {
+                  data: friends,
+                  title: "Friends",
+                  userId,
+                  isdifferentusersprofile
+                })
+              }
+            >
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{friends.length}</Text>
 
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{friends.length}</Text>
-
-              <Text style={styles.statLabel}>Followers</Text>
-            </View>
+                <Text style={styles.statLabel}>Followers</Text>
+              </View>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => navigation.navigate("FriendList", { data: friends, title: "Friends",userId })}>
-
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{friends.length}</Text>
-              <Text style={styles.statLabel}>Following</Text>
-            </View>
+            <TouchableOpacity
+              onPress={() =>
+                navigation.navigate("FriendList", {
+                  data: friends,
+                  title: "Friends",
+                  userId,
+                })
+              }
+            >
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{friends.length}</Text>
+                <Text style={styles.statLabel}>Following</Text>
+              </View>
             </TouchableOpacity>
-
           </View>
         </View>
 
         <View style={styles.bioSection}>
-          <Text style={styles.bioText}>{userdata?.bio || "Add bio"}</Text>
+          <Text style={styles.bioText}>{userdata?.bio || "No bio"}</Text>
           <TouchableOpacity
-            style={styles.editProfileButton}
-            onPress={() => setModalVisible(true)}
-          >
-            <Text style={styles.editProfileText}>Edit profile</Text>
-          </TouchableOpacity>
+  style={styles.editProfileButton}
+  onPress={() => {
+    if (!isdifferentusersprofile) {
+      handleEditProfile(); // Call function for editing profile
+    } else {
+      handleSendMessage(userdata?.username); // Call function for messaging
+    }
+  }}
+>
+  <Text style={styles.editProfileText}>
+    {!isdifferentusersprofile ? "Edit profile" : "Message"}
+  </Text>
+</TouchableOpacity>
+
+      
         </View>
 
         {renderfriends()}
-        {renderSuggestedUsers()}
+{!isdifferentusersprofile ? renderSuggestedUsers() : null}
 
+    {renderpolls()}
         <Modal
           animationType="slide"
           transparent={true}
@@ -536,39 +772,46 @@ const handleFriendRequest = (friendId) => {
           </View>
         </Modal>
         <Modal
-  animationType="slide"
-  transparent={true}
-  visible={passwordModalVisible}
-  onRequestClose={() => setPasswordModalVisible(false)}
->
-  <View style={styles.modalContainer}>
-    <View style={styles.modalContent}>
-      <Text style={styles.modalTitle}>Change Password</Text>
-      
-      <TextInput
-        style={styles.input}
-        placeholder="Old Password"
-        secureTextEntry
-        value={oldPassword}
-        onChangeText={setOldPassword}
-      />
-      
-      <TextInput
-        style={styles.input}
-        placeholder="New Password"
-        secureTextEntry
-        value={newPassword}
-        onChangeText={setNewPassword}
-      />
-      
-      <View style={styles.buttonRow}>
-        <Button title="Cancel" onPress={() => setPasswordModalVisible(false)} color="#262626" />
-        <Button title="Change" onPress={handleChangePassword} color="#0095f6" />
-      </View>
-    </View>
-  </View>
-</Modal>
+          animationType="slide"
+          transparent={true}
+          visible={passwordModalVisible}
+          onRequestClose={() => setPasswordModalVisible(false)}
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Change Password</Text>
 
+              <TextInput
+                style={styles.input}
+                placeholder="Old Password"
+                secureTextEntry
+                value={oldPassword}
+                onChangeText={setOldPassword}
+              />
+
+              <TextInput
+                style={styles.input}
+                placeholder="New Password"
+                secureTextEntry
+                value={newPassword}
+                onChangeText={setNewPassword}
+              />
+
+              <View style={styles.buttonRow}>
+                <Button
+                  title="Cancel"
+                  onPress={() => setPasswordModalVisible(false)}
+                  color="#262626"
+                />
+                <Button
+                  title="Change"
+                  onPress={handleChangePassword}
+                  color="#0095f6"
+                />
+              </View>
+            </View>
+          </View>
+        </Modal>
       </ScrollView>
     );
 }
@@ -730,6 +973,16 @@ const styles = StyleSheet.create({
     backgroundColor: "#0095f6",
     borderRadius: 4,
     paddingVertical: 6,
+    minWidth: 100, // Ensures enough space for both texts
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  
+  
+  unfollowButton:{
+    backgroundColor: "#ff0a0a",
+    borderRadius: 4,
+    paddingVertical: 6,
     paddingHorizontal: 24,
   },
   followButtonText: {
@@ -874,6 +1127,93 @@ loader: {
   top: "50%",
   left: "50%",
   transform: [{ translateX: -15 }, { translateY: -15 }],
+},
+pollList: {
+  padding: wp('4%'),
+  paddingBottom: hp('10%')
+},
+pollCard: {
+  backgroundColor: "#FFF",
+  borderRadius: wp('4%'),
+  padding: wp('4%'),
+  marginBottom: hp('2%'),
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.1,
+  shadowRadius: wp('2%'),
+  elevation: 3,
+},
+pollQuestion: {
+  fontSize: wp('4.5%'),
+  fontWeight: "600",
+  color: "#000",
+  marginBottom: hp('2%'),
+},
+optionBar: {
+  height: hp('6%'),
+  backgroundColor: "#F2F2F7",
+  borderRadius: wp('2%'),
+  marginBottom: hp('1%'),
+  overflow: "hidden",
+  position: "relative",
+},
+optionProgress: {
+  position: "absolute",
+  top: 0,
+  left: 0,
+  bottom: 0,
+  backgroundColor: "rgba(0, 122, 255, 0.1)",
+},
+optionContent: {
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
+  padding: wp('3%'),
+  zIndex: 1,
+},
+optionText: {
+  fontSize: wp('4%'),
+  color: "#000",
+},
+voteCount: {
+  fontSize: wp('4%'),
+  fontWeight: "600",
+  color: "#007AFF",
+},
+shareButton: {
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "center",
+  marginTop: hp('2%'),
+  padding: wp('3%'),
+  backgroundColor: "#F2F2F7",
+  borderRadius: wp('2%'),
+},
+shareText: {
+  marginLeft: wp('2%'),
+  fontSize: wp('4%'),
+  color: "#007AFF",
+  fontWeight: "600",
+},actionButtons: {
+  flexDirection: "row",
+  justifyContent: "space-between", 
+  alignItems: "center",
+  marginTop: hp("2%"),
+},
+deleteButton: {
+  flexDirection: "row",
+  alignItems: "center",
+  backgroundColor: "#FFE5E5", 
+  padding: wp("2%"),
+  borderRadius: wp("2%"),
+  marginTop:hp("1%")
+
+},
+deleteText: {
+  color: "red",
+  fontSize: wp("4%"),
+  fontWeight: "600",
+  marginLeft: wp("1%"),
 },
 
 });

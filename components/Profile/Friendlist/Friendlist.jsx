@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, FlatList, Image, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, FlatList, Image, StyleSheet, TouchableOpacity,Alert } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { ArrowLeft } from "lucide-react-native";
 import axios from 'axios';
@@ -9,11 +9,47 @@ import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-nat
 export default function FriendList() {
   const navigation = useNavigation();
   const route = useRoute();
-  const { data = [], title = "Friends", userId } = route.params || {};
+  const { data = [], title = "Friends", userId,isdifferentusersprofile } = route.params || {};
   
   const [friends, setFriends] = useState(data);
-
-  
+ const handleButtonClick = (id,isrequested) => {
+        if (isrequested) {
+          // Show confirmation alert before canceling the request
+          Alert.alert(
+            "Cancel Request?",
+            "Are you sure you want to cancel the friend request?",
+            [
+              { text: "No", style: "cancel" },
+              {
+                text: "Yes",
+                onPress: () => cancelFriendRequest(id),
+              },
+            ]
+          );
+        } else {
+          handleFollow(id);
+        }
+      };
+      // Cancel friend request
+const cancelFriendRequest = (id) => {
+  axios
+    .post(`${API_URL}/friend/cancel-request`, {
+      senderId: userId,
+      receiverId: id,
+    })
+    .then((response) => {
+      alert(response.data.message);
+      setFriends((prevFriends) =>
+        prevFriends.map((friend) =>
+          friend._id === id ? { ...friend, requested: false } : friend
+        )
+      );
+      // setRefresh((prev) => !prev);
+    })
+    .catch((error) => {
+      alert(error.response?.data?.message || "Something went wrong.");
+    });
+};
   const handleFollow = (id) => {
     console.log(`Followed user with ID: ${id}`);
     axios
@@ -23,6 +59,11 @@ export default function FriendList() {
       })
       .then((response) => {
         alert(response.data.message);
+        setFriends((prev) =>
+          prev.map((data) =>
+            data._id === id ? { ...data, requested: true } : data
+          )
+        );
       })
       .catch((error) => {
         alert(
@@ -33,26 +74,43 @@ export default function FriendList() {
   };
 
   const handleUnfollow = (id) => {
-    console.log(`Unfollowing user with ID: ${id}`);
+    Alert.alert(
+      "Unfollow User",
+      "Are you sure you want to unfollow this user?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Unfollow",
+          onPress: () => {
+            console.log(`Unfollowing user with ID: ${id}`);
   
-    axios
-      .post(`${API_URL}/friend/unfollow`, { senderId: userId, receiverId: id })
-      .then((response) => {
-        alert(response.data.message);
+            axios
+              .post(`${API_URL}/friend/unfollow`, { senderId: userId, receiverId: id })
+              .then((response) => {
+                alert(response.data.message);
   
-        // Update state: Remove the unfollowed user from the list
-        setFriends((prevFriends) => prevFriends.filter((friend) => friend._id !== id));
-      })
-      .catch((error) => {
-        alert(error.response?.data?.message || "Something went wrong. Please try again.");
-      });
+                // Update state: Remove the unfollowed user from the list
+                setFriends((prevFriends) => prevFriends.filter((friend) => friend._id !== id));
+              })
+              .catch((error) => {
+                alert(error.response?.data?.message || "Something went wrong. Please try again.");
+              });
+          },
+        },
+      ]
+    );
   };
-  
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}
+        >
           <ArrowLeft size={wp(6)} color="#1e0c0c" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{title}</Text>
@@ -60,38 +118,60 @@ export default function FriendList() {
 
       {/* No Data Message */}
       {friends.length === 0 ? (
-        <Text style={styles.noDataText}>No {title.toLowerCase()} available</Text>
+        <Text style={styles.noDataText}>
+          No {title.toLowerCase()} available
+        </Text>
       ) : (
         <FlatList
-        data={friends}
-        keyExtractor={(item, index) => (item.id ? item.id.toString() : index.toString())}
-        contentContainerStyle={{ paddingBottom: hp(5) }}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <Image
-              source={{
-                uri: item.profilePic || "https://cdn-icons-png.flaticon.com/512/149/149071.png",
-              }}
-              style={styles.avatar}
-            />
-            <Text style={styles.username}>{item.username}</Text>
+          data={friends}
+          keyExtractor={(item, index) =>
+            item.id ? item.id.toString() : index.toString()
+          }
+          contentContainerStyle={{ paddingBottom: hp(5) }}
+          renderItem={({ item }) => (
+            <View style={styles.card}>
+              <Image
+                source={{
+                  uri:
+                    item.profilePic ||
+                    "https://cdn-icons-png.flaticon.com/512/149/149071.png",
+                }}
+                style={styles.avatar}
+              />
+              <Text style={styles.username}>{item.username}</Text>
 
-            {/* Follow / Unfollow Button */}
-            {title === "Friends" ? (
-              <TouchableOpacity
-                style={[styles.followButton, styles.unfollowButton]}
-                onPress={() => handleUnfollow(item._id)}
-              >
-                <Text style={styles.buttonText}>Unfollow</Text>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity style={styles.followButton} onPress={() => handleFollow(item._id)}>
-                <Text style={styles.buttonText}>Follow</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
-      />
+              {/* Follow / Unfollow Button */}
+              {title === "Friends" ? (
+                <TouchableOpacity
+                  style={[
+                    styles.followButton,
+                    {
+                      backgroundColor: isdifferentusersprofile ? "blue" : "red",
+                    }, // Dynamic color
+                  ]}
+                  onPress={() =>
+                    isdifferentusersprofile
+                      ? handleButtonClick(item._id,item.requested)
+                      : handleUnfollow(item._id)
+                  }
+                >
+                  <Text style={styles.buttonText}>
+                    {isdifferentusersprofile ? "Follow" : "Unfollow"}
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={styles.followButton}
+                  onPress={() => handleButtonClick(item._id, item.requested)}
+                  >
+                  <Text style={styles.buttonText}>
+                    {item.requested ? "Requested" : "Follow"}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+        />
       )}
     </View>
   );

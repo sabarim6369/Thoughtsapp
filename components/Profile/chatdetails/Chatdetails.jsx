@@ -33,51 +33,30 @@ const ChatDetails = ({ route }) => {
  const [modalVisible, setModalVisible] = useState(false);
     const [selectedPoll, setSelectedPoll] = useState(null);
         const [selectedFriends, setSelectedFriends] = useState([]);
-        const [messages, setMessages] = useState([
-          {
-            id: '1',
-            text: 'Hey there! How are you?',
-            sentByUser: false,
-            timestamp: '09:30 AM'
-          },
-          {
-            id: '2',
-            text: 'I\'m good, thanks! How about you?',
-            sentByUser: true,
-            timestamp: '09:31 AM'
-          },
-          {
-            id: '3',
-            text: 'Great! Just working on some new features.',
-            sentByUser: false,
-            timestamp: '09:32 AM'
-          },
-          {
-            id: '4',
-            text: 'That sounds interesting! Can\'t wait to see them.',
-            sentByUser: true,
-            timestamp: '09:33 AM'
-          }
-        ]);
-      useEffect(()=>{
-        const fetchMessages = async () => {
-          try {
-            console.log("👏👏👏👏👏👏",friendid,userid)
-            const response = await axios.post(`${API_URL}/friend/getchat`, {
-              userId: userid,
-              friendId: friendid,
-            });
-        
-            if (response.status === 200) {
-              console.log("😎😎😎😎😎😎😎😎😎😶‍🌫️👏👏",response.data.messages)
-              setMessages(response.data.messages);
-            }
-          } catch (error) {
-            console.error("Error fetching messages:", error);
-          }
-        };
-        fetchMessages();
-      },[userId])
+        const [messages, setMessages] = useState([]);
+        useEffect(() => {
+          const fetchMessages = async () => {
+              try {
+                  console.log("👏👏 Fetching messages for:", friendid, userid);
+                  const response = await axios.post(`${API_URL}/friend/getchat`, {
+                      userId: userid,
+                      friendId: friendid,
+                  });
+      
+                  if (response.status === 200) {
+                      console.log("😎 Messages received:", response.data.messages);
+                      setMessages(response.data.messages || []); // Ensure it's always an array
+                  }
+              } catch (error) {
+                  console.error("❌ Error fetching messages:", error);
+                  setMessages([]); // Set empty array in case of error (including 404)
+              }
+          };
+      
+          fetchMessages();
+      }, [userId]);
+      
+      
   useEffect(() => {
     const fetchPolls = async () => {
       try {
@@ -214,42 +193,57 @@ const handleShare = () => {
       return;
   }
 console.log("😍😍😍😍😍😂😂😂😂",selectedPoll.id)
-  axios.post(`${API_URL}/poll/sharepoll`, {
-      pollId: selectedPoll.id, 
+  axios
+    .post(`${API_URL}/poll/sharepoll`, {
+      pollId: selectedPoll.id,
       userId,
-      friends: selectedFriends
-  })
-  .then(response => {
+      friends: selectedFriends,
+    })
+    .then((response) => {
       alert(response.data.message);
       setModalVisible(false);
       setSelectedFriends([]);
-  })
-  .catch(error => {
+    })
+    .catch((error) => {
       console.error("Share Error:", error);
-      alert(error.response?.data?.message || "Failed to share poll. Please try again.");
-  });
+      alert(
+        error.response?.data?.message ||
+          "Failed to share poll. Please try again."
+      );
+    });
 };
-const renderMessage = ({ item }) => (
-  <View
-    style={[
-      styles.messageContainer,
-      item.messageType === "sent" ? styles.sentMessage : styles.receivedMessage,
-    ]}
-  >
-    <Text style={[
-      styles.messageText,
-      { color: item.messageType === "sent" ? "#fff" : "#000" }
-    ]}>
-      {item.text}
-    </Text>
-    <Text style={[
-      styles.timestamp,
-      { color: item.messageType === "sent" ? "#fff" : "#666" }
-    ]}>
-      {new Date(item.createdAt).toLocaleTimeString()} {/* Format timestamp */}
-    </Text>
-  </View>
-);
+const renderMessage = ({ item }) => {
+  if (!item || Object.keys(item).length === 0) {
+    return (
+      <View style={styles.emptyChatContainer}>
+        <Text style={styles.emptyChatText}>Start chatting...</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View
+      style={[
+        styles.messageContainer,
+        item.messageType === "sent" ? styles.sentMessage : styles.receivedMessage,
+      ]}
+    >
+      <Text style={[
+        styles.messageText,
+        { color: item.messageType === "sent" ? "#fff" : "#000" }
+      ]}>
+        {item.text}
+      </Text>
+      <Text style={[
+        styles.timestamp,
+        { color: item.messageType === "sent" ? "#fff" : "#666" }
+      ]}>
+        {new Date(item.createdAt).toLocaleTimeString()} {/* Format timestamp */}
+      </Text>
+    </View>
+  );
+};
+
 
   return (
     <View style={styles.container}>
@@ -874,7 +868,11 @@ const styles = StyleSheet.create({
       fontSize: 12,
       marginTop: 4,
     },
-    
+    emptyChatContainer: {
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 20,
+    },
 });
 
 export default ChatDetails;

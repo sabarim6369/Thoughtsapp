@@ -46,10 +46,10 @@ function Notificationswithfooter() {
   );
 }
 
-function Profilewithfooter() {
+function Profilewithfooter({route}) {
   return (
     <View style={{ flex: 1 }}>
-      <Profile />
+      <Profile route={route}/>
       <Footer />
     </View>
   );
