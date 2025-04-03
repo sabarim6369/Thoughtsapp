@@ -4,11 +4,11 @@
     "slug": "ThoughtsApp",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/applogo1.png",  
+    "icon": "./assets/applogo1.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/download.png",  
+      "image": "./assets/download.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -27,7 +27,7 @@
       "runtimeVersion": "1.0.0"
     },
     "web": {
-      "favicon": "./assets/download.png"  
+      "favicon": "./assets/download.png"
     },
     "extra": {
       "expo.build.android.applicationId": "com.msabari.Thoughts",
@@ -36,7 +36,7 @@
       }
     },
     "updates": {
-      "url": "https://u.expo.dev/5daa6438-c04b-4ed9-8b7a-a4baea17d2c8",
+      "url": "https://u.expo.dev/cf0aa290-62e3-4859-8e06-5ed54f724c8b",
       "fallbackToCacheTimeout": 0
     },
     "owner": "msabari1"

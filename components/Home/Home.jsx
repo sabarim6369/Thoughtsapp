@@ -292,7 +292,7 @@ const handleFriendRequest = (friendId) => {
                   onPress={() => toggleFriendSelection(item._id)}
                 >
                   <Image
-                    source={{ uri: item.profilePic || "https://via.placeholder.com/50" }}
+                    source={{ uri: item.profilePic || "https://cdn-icons-png.flaticon.com/512/149/149071.png"}}
                     style={styles.friendAvatar}
                   />
                   <Text style={styles.friendName}>{item.username}</Text>
