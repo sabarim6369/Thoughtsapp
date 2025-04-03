@@ -18,7 +18,8 @@ export default function Mypolls() {
   const [selectedFriends, setSelectedFriends] = useState([]);
   const [friendList, setFriendList] = useState([]);
   const [createPollVisible, setCreatePollVisible] = useState(false);
-
+ const [searchQuery, setSearchQuery] = useState("");
+    const [filteredFriendList, setFilteredFriendList] = useState(friendList);
   // Move poll creation state into the CreatePollModal component
   const CreatePollModal = () => {
     const [pollData, setPollData] = useState({
@@ -200,7 +201,16 @@ export default function Mypolls() {
       setLoading(false);
     }
   };
-
+useEffect(()=>{
+  if(searchQuery){
+    setFilteredFriendList(
+      friendList.filter((friend)=>friend.username.toLowerCase().includes(searchQuery.toLowerCase()))
+    )
+  }
+  else {
+    setFilteredFriendList(friendList);
+  }
+},[searchQuery, friendList]);
   useEffect(() => {
     if (userId) {
       axios.get(`${API_URL}/friend/list/${userId}`)
@@ -343,9 +353,15 @@ const deletePollFromServer = async (pollId) => {
                 <X size={24} color="#333" />
               </TouchableOpacity>
             </View>
-
+<TextInput
+        style={styles.searchBar}
+        placeholder="Search by username..."
+        placeholderTextColor="#A9A9A9"
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+      />
             <FlatList
-              data={friendList}
+              data={filteredFriendList}
               keyExtractor={(item) => item._id}
               renderItem={({ item }) => (
                 <TouchableOpacity
@@ -643,6 +659,21 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginLeft: wp("1%"),
   },
-  
+  searchBar: {
+    height: 40,
+    margin: wp('4%'),
+    borderRadius: wp('6%'),
+    paddingHorizontal: wp('4%'),
+    backgroundColor: "#F5F5F5",
+    borderWidth: 1.5,
+    borderColor: "#D0D0D0",
+    fontSize: wp('4%'),
+    color: "#333",
+    elevation: 3, // Add subtle shadow for a floating effect (Android)
+    shadowColor: "#000", // Shadow for iOS
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+  }
   
 });

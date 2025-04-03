@@ -17,6 +17,7 @@ import ChatDetails from "./components/Profile/chatdetails/Chatdetails";
 import WelcomeScreen from "./components/Welcomepage/Welcomepage";
 import Messages from "./components/Messages/Messages";
 import FriendList from "./components/Profile/Friendlist/Friendlist";
+import Searchpage from "./components/searchpage/Searchpage";
 const Stack = createStackNavigator();
 
 function HomeWithFooter() {
@@ -75,6 +76,14 @@ function FriendListWithfooter({ route }) {
   return (
     <View style={{ flex: 1 }}>
       <FriendList route={route} />
+      <Footer />
+    </View>
+  );
+}
+function Searchpagewithfooter({ route }) {
+  return (
+    <View style={{ flex: 1 }}>
+      <Searchpage route={route} />
       <Footer />
     </View>
   );
@@ -139,17 +148,24 @@ export default function App() {
 
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName={initialRoute} screenOptions={{ headerShown: false }}>
+      <Stack.Navigator
+        initialRouteName={initialRoute}
+        screenOptions={{ headerShown: false }}
+      >
         <Stack.Screen name="Welcome" component={WelcomeScreen} />
         <Stack.Screen name="Login" component={Login} />
         <Stack.Screen name="Signup" component={Signup} />
         <Stack.Screen name="Home" component={HomeWithFooter} />
         <Stack.Screen name="Mypolls" component={Mypollswithfooter} />
-        <Stack.Screen name="Notifications" component={Notificationswithfooter} />
+        <Stack.Screen
+          name="Notifications"
+          component={Notificationswithfooter}
+        />
         <Stack.Screen name="Profile" component={Profilewithfooter} />
         <Stack.Screen name="ChatDetails" component={Chatdetailswithfooter} />
         <Stack.Screen name="Messages" component={MessageswithFooter} />
         <Stack.Screen name="FriendList" component={FriendListWithfooter} />
+        <Stack.Screen name="Searchpage" component={Searchpagewithfooter} />
       </Stack.Navigator>
       <StatusBar style="auto" />
     </NavigationContainer>

@@ -32,13 +32,13 @@
     "extra": {
       "expo.build.android.applicationId": "com.msabari.Thoughts",
       "eas": {
-        "projectId": "cf0aa290-62e3-4859-8e06-5ed54f724c8b"
+        "projectId": "03cbff95-feeb-433c-800b-99db2059cee7"
       }
     },
     "updates": {
       "url": "https://u.expo.dev/cf0aa290-62e3-4859-8e06-5ed54f724c8b",
       "fallbackToCacheTimeout": 0
     },
-    "owner": "msabari1"
+    "owner": "msabari3"
   }
 }

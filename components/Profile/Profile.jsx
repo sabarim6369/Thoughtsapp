@@ -38,20 +38,39 @@ export default function Profile({route}) {
   const [selectedPoll, setSelectedPoll] = useState(null);
   const [friendList, setFriendList] = useState([]);
   const [selectedFriends, setSelectedFriends] = useState([]);
-
+const[isfriendalready,setisfriend]=useState(false);
+const [isrequested, setisrequested] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [filteredFriendList, setFilteredFriendList] = useState(friendList);
   useEffect(() => {
     const fetchUserId = async () => {
       try {
         const storedUserId = await AsyncStorage.getItem("userId");
 
         if (useridofdifferentuser) {
-          setUserId(useridofdifferentuser);
-
-          // Only set 'differentusersprofile' to true if it's a different user
-          setdifferentusersprofile(storedUserId !== useridofdifferentuser);
+          try {
+            setUserId(useridofdifferentuser);
+        
+            const response = await axios.post(
+              `${API_URL}/friend/isinfriendlist`,
+              {
+                useridofdifferentuser,
+                myid: storedUserId,
+              }
+            );
+        
+            setisfriend(response.data.isfriend);
+            setisrequested(response.data.isrequested);
+        
+            // Only set 'differentusersprofile' to true if it's a different user
+            setdifferentusersprofile(storedUserId !== useridofdifferentuser);
+          } catch (error) {
+            console.error("Error checking friend status:", error.response?.data || error.message);
+          }
         } else if (storedUserId) {
           setUserId(storedUserId);
         }
+        
       } catch (error) {
         console.error("Error fetching userId:", error);
       } finally {
@@ -88,7 +107,16 @@ export default function Profile({route}) {
       fetchData();
     }
   }, [userId]);
-
+useEffect(()=>{
+  if(searchQuery){
+    setFilteredFriendList(
+      friendList.filter((friend)=>friend.username.toLowerCase().includes(searchQuery.toLowerCase()))
+    )
+  }
+  else {
+    setFilteredFriendList(friendList);
+  }
+},[searchQuery, friendList]);
   const fetchPolls = async () => {
     try {
       const response = await axios.get(`${API_URL}/poll/getPolls/${userId}`);
@@ -367,6 +395,44 @@ export default function Profile({route}) {
         alert(error.response?.data?.message || "Something went wrong.");
       });
   };
+ 
+const cancelFriendRequest1 = async () => {
+  const userId1 = await AsyncStorage.getItem("userId");
+
+  // Show confirmation alert
+  Alert.alert(
+    "Confirm Cancelation",
+    "Are you sure you want to cancel the friend request?",
+    [
+      {
+        text: "Cancel",
+        onPress: () => console.log("Cancel Pressed"),
+        style: "cancel"
+      },
+      {
+        text: "OK",
+        onPress: async () => {
+          // Proceed with canceling the friend request
+          try {
+            const response = await axios.post(`${API_URL}/friend/cancel-request`, {
+              senderId: userId1,
+              receiverId: userId,
+            });
+
+            alert(response.data.message);
+            setsuggestedfriends((prevFriends) =>
+              prevFriends.map((friend) =>
+                friend._id === userId ? { ...friend, requested: false } : friend
+              )
+            );
+          } catch (error) {
+            alert(error.response?.data?.message || "Something went wrong.");
+          }
+        }
+      }
+    ]
+  );
+};
 
   const handleFriendRequest = (friendId) => {
     console.log(friendId);
@@ -435,6 +501,30 @@ export default function Profile({route}) {
           "Failed to share poll. Please try again."
       );
     }
+  };
+  const handleFollow = async() => {
+    let id=await AsyncStorage.getItem("userId")
+    console.log(`Followed user with ID: ${id}`);
+    axios
+      .post(`${API_URL}/friend/sendRequest`, {
+        senderId: id,
+        receiverId: userId,
+      })
+      .then((response) => {
+        alert(response.data.message);
+        setisrequested(true)
+        setFriends((prev) =>
+          prev.map((data) =>
+            data._id === id ? { ...data, requested: true } : data
+          )
+        );
+      })
+      .catch((error) => {
+        alert(
+          error.response?.data?.message ||
+            "Something went wrong. Please try again."
+        );
+      });
   };
   if (loading) {
     return (
@@ -518,6 +608,7 @@ export default function Profile({route}) {
               data: suggestedfriends,
               title: "Suggested Friends",
               userId,
+              suggested:true
             })
           }
         >
@@ -769,12 +860,21 @@ export default function Profile({route}) {
             if (!isdifferentusersprofile) {
               handleEditProfile(); // Call function for editing profile
             } else {
-              handleSendMessage(userdata?.username); // Call function for messaging
+              if(isfriendalready){
+              handleSendMessage(userdata?.username);  
+              }
+              else{
+                if (!isrequested) {
+                  handleFollow();
+                } else {
+                  cancelFriendRequest1();
+                }
+              }
             }
           }}
         >
           <Text style={styles.editProfileText}>
-            {!isdifferentusersprofile ? "Edit profile" : "Message"}
+            {!isdifferentusersprofile ? "Edit profile" :(isfriendalready?"Message":(!isrequested?"Follow":"Requested"))}
           </Text>
         </TouchableOpacity>
       </View>
@@ -910,9 +1010,15 @@ export default function Profile({route}) {
                 <X size={24} color="#333" />
               </TouchableOpacity>
             </View>
-
+<TextInput
+        style={styles.searchBar}
+        placeholder="Search by username..."
+        placeholderTextColor="#A9A9A9"
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+      />
             <FlatList
-              data={friendList}
+              data={filteredFriendList}
               keyExtractor={(item) => item._id}
               renderItem={({ item }) => (
                 <TouchableOpacity
@@ -1432,4 +1538,20 @@ confirmButtonText: {
   fontSize: wp("4%"),
   fontWeight: "600",
 },
+searchBar: {
+  height: 40,
+  margin: wp('4%'),
+  borderRadius: wp('6%'),
+  paddingHorizontal: wp('4%'),
+  backgroundColor: "#F5F5F5",
+  borderWidth: 1.5,
+  borderColor: "#D0D0D0",
+  fontSize: wp('4%'),
+  color: "#333",
+  elevation: 3, // Add subtle shadow for a floating effect (Android)
+  shadowColor: "#000", // Shadow for iOS
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.1,
+  shadowRadius: 5,
+}
 });

@@ -1,15 +1,19 @@
 import React, { useState,useEffect} from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity, FlatList,Modal,Button } from "react-native";
+import { View, Text, StyleSheet, Image, TouchableOpacity, FlatList,Modal,Button,TextInput } from "react-native";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
 import Icon from "react-native-vector-icons/Ionicons"; 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import API_URL from "../../api";
 import axios from "axios";
 import { Plus, X, Share2, ChevronRight } from 'lucide-react-native';
+import { useNavigation } from "@react-navigation/native";
+// import LottieView from "lottie-react-native";
+// import loadingAnimation from "../../Animation - 1743666142490.json";
 
 
 export default function Home() {
-    const [selectedPolls, setSelectedPolls] = useState({}); // Store selected options
+  const navigation=useNavigation();
+    const [selectedPolls, setSelectedPolls] = useState({}); 
         const [userId, setUserId] = useState(null);
         const [loadingUserId, setLoadingUserId] = useState(true); 
         const [polls1, setPolls1] = useState([]);
@@ -17,7 +21,9 @@ export default function Home() {
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedPoll, setSelectedPoll] = useState(null);
     const [selectedFriends, setSelectedFriends] = useState([]);
-
+    const [loading, setLoading] = useState(true); // Track overall loading state
+    const [searchQuery, setSearchQuery] = useState("");
+    const [filteredFriendList, setFilteredFriendList] = useState(friendList);
  useEffect(() => {
     const fetchUserId = async () => {
         try {
@@ -67,7 +73,16 @@ useEffect(() => {
             });
     }
 }, [userId]);
-
+useEffect(()=>{
+  if(searchQuery){
+    setFilteredFriendList(
+      friendList.filter((friend)=>friend.username.toLowerCase().includes(searchQuery.toLowerCase()))
+    )
+  }
+  else {
+    setFilteredFriendList(friendList);
+  }
+},[searchQuery, friendList]);
 
 const handleVote = async (pollId, index) => {
     if (!userId) {
@@ -156,14 +171,20 @@ const handleFriendRequest = (friendId) => {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
+          <View></View>
           <Image
             source={require("../../assets/download.png")}
             style={styles.logo}
           />
-          
+            <TouchableOpacity style={styles.iconContainer} onPress={()=>navigation.navigate("Messages")}>
+
+            <Icon name="chatbubble-ellipses-outline" size={30} color="#888" />
+            </TouchableOpacity>
+
+
         </View>
         {loadingUserId ? (
-          <Text>Loading...</Text> // Show this if still loading user data
+          <Text>Loading...</Text>
         ) : polls1.length === 0 ? (
 <View style={styles.noPollsContainer}>
   <Icon name="chatbubble-ellipses-outline" size={50} color="#888" />
@@ -248,7 +269,7 @@ const handleFriendRequest = (friendId) => {
                       />
                     </TouchableOpacity>
 
-                    {!isFriend && (
+                    {/* {!isFriend && (
                       <TouchableOpacity
                         onPress={() => handleFriendRequest(item.userid)}
                       >
@@ -258,7 +279,7 @@ const handleFriendRequest = (friendId) => {
                           color="#007bff"
                         />
                       </TouchableOpacity>
-                    )}
+                    )} */}
                   </View>
                 </View>
               );
@@ -279,9 +300,17 @@ const handleFriendRequest = (friendId) => {
                 <X size={24} color="#333" />
               </TouchableOpacity>
             </View>
+            <TextInput
+        style={styles.searchBar}
+        placeholder="Search by username..."
+        placeholderTextColor="#A9A9A9"
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+      />
+
 
             <FlatList
-              data={friendList}
+              data={filteredFriendList}
               keyExtractor={(item) => item._id}
               renderItem={({ item }) => (
                 <TouchableOpacity
@@ -334,13 +363,18 @@ const styles = StyleSheet.create({
     paddingTop: hp("5%"),
   },
   header: {
-    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: wp("5%"),
     marginBottom: hp("2%"),
   },
   logo: {
     width: wp("15%"),
     height: wp("15%"),
     resizeMode: "contain",
+  },
+  iconContainer: {
+    
   },
   pollList: {
     paddingBottom: hp("10%"),
@@ -687,5 +721,22 @@ const styles = StyleSheet.create({
     color: "#777",
     marginTop: 5,
   },
+  searchBar: {
+    height: 40,
+    margin: wp('4%'),
+    borderRadius: wp('6%'),
+    paddingHorizontal: wp('4%'),
+    backgroundColor: "#F5F5F5",
+    borderWidth: 1.5,
+    borderColor: "#D0D0D0",
+    fontSize: wp('4%'),
+    color: "#333",
+    elevation: 3, // Add subtle shadow for a floating effect (Android)
+    shadowColor: "#000", // Shadow for iOS
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+  }
+  
   
 });
