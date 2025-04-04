@@ -526,6 +526,32 @@ const cancelFriendRequest1 = async () => {
         );
       });
   };
+   
+  const handleDeletePoll = (pollId) => {
+    Alert.alert(
+      "Confirm Delete",
+      "Are you sure you want to delete this poll?",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Delete", onPress: () => deletePollFromServer(pollId), style: "destructive" },
+      ]
+    );
+  };
+  
+const deletePollFromServer = async (pollId) => {
+  try {
+    const response = await axios.delete(`${API_URL}/poll/deletepoll/${pollId}`);
+    
+    if (response.status === 200) {
+      setPolls((prevPolls) => prevPolls.filter((poll) => poll._id !== pollId));
+    } else {
+      Alert.alert("Error", "Failed to delete poll. Please try again.");
+    }
+  } catch (error) {
+    console.error("Error deleting poll:", error);
+    Alert.alert("Error", "Something went wrong while deleting the poll.");
+  }
+};
   if (loading) {
     return (
       <ActivityIndicator size="large" color="#0095f6" style={styles.loader} />
