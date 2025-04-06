@@ -36,7 +36,7 @@ const menuItems = [
   { name: "home", type: "feather", screen: "Home" }, // Home icon
   { name: "search", type: "feather", screen: "Searchpage" }, // Profile icon
 
-  { name: "menu", type: "feather", screen: "Mypolls" }, // Menu icon (three lines)
+  { name: "plus", type: "feather", screen: "Mypolls" }, // Menu icon (three lines)
   
 
     { name: "bell", type: "feather", screen: "Notifications" }, // Notification (Bell)

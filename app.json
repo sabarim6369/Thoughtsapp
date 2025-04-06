@@ -4,7 +4,7 @@
     "slug": "Thoughts",
     "version": "1.0.0",
     "orientation": "portrait",
-"icon": "./assets/bgremovedlogo.png",
+"icon": "./assets/reallogo.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
@@ -17,7 +17,7 @@
     },
     "android": {
       "adaptiveIcon": {
-         "foregroundImage": "./assets/bgremovedlogo.png",
+         "foregroundImage": "./assets/reallogo.png",
          "backgroundColor": "#ffffff"
         },
       "package": "com.skarthiek.Thoughts"

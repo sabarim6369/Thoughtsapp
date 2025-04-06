@@ -113,8 +113,8 @@ const cancelFriendRequest = (id) => {
         >
           <ArrowLeft size={wp(6)} color="#1e0c0c" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{title}</Text>
-      </View>
+        <Text style={styles.headerTitle}>{title === "Friends" ? "Friends" : "Followers"}</Text>
+        </View>
 
       {/* No Data Message */}
       {friends.length === 0 ? (

@@ -681,13 +681,13 @@ const deletePollFromServer = async (pollId) => {
     <View style={styles.suggestedSection}>
       <View style={styles.suggestedHeader}>
         <Text style={styles.suggestedTitle}>My Polls</Text>
-        {!isdifferentusersprofile ? (
+        {/* {!isdifferentusersprofile ? (
           <TouchableOpacity onPress={() => navigation.navigate("Mypolls")}>
             <Text style={styles.seeAllText}>See all</Text>
           </TouchableOpacity>
         ) : (
           <></>
-        )}
+        )} */}
       </View>
       <ScrollView showsVerticalScrollIndicator={false} style={styles.pollList}>
         {polls.map((item) => (
@@ -858,7 +858,7 @@ const deletePollFromServer = async (pollId) => {
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>{friends.length}</Text>
 
-              <Text style={styles.statLabel}>Followers</Text>
+              <Text style={styles.statLabel}>Friends</Text>
             </View>
           </TouchableOpacity>
           <TouchableOpacity
@@ -870,10 +870,10 @@ const deletePollFromServer = async (pollId) => {
               })
             }
           >
-            <View style={styles.statItem}>
+            {/* <View style={styles.statItem}>
               <Text style={styles.statNumber}>{friends.length}</Text>
               <Text style={styles.statLabel}>Following</Text>
-            </View>
+            </View> */}
           </TouchableOpacity>
         </View>
       </View>
@@ -905,7 +905,7 @@ const deletePollFromServer = async (pollId) => {
         </TouchableOpacity>
       </View>
 
-      {renderfriends()}
+      {/* {renderfriends()} */}
       {!isdifferentusersprofile ? renderSuggestedUsers() : null}
 
       {renderpolls()}

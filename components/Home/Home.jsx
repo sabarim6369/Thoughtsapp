@@ -259,8 +259,8 @@ const handleFriendRequest = (friendId) => {
                                   : styles.unselectedOptionText,
                               ]}
                             >
-                              {option.votes} votes • {votePercentage}%
-                            </Text>
+{option.votes} {option.votes === 1 || option.votes === 0 ? "vote" : "votes"} • {votePercentage}%
+</Text>
                           )}
                         </View>
                       </TouchableOpacity>
@@ -389,6 +389,7 @@ const styles = StyleSheet.create({
     width: wp("15%"),
     height: wp("15%"),
     resizeMode: "contain",
+    marginLeft:wp("6%")
   },
   iconContainer: {
     
