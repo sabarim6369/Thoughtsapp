@@ -12,14 +12,14 @@ import { useNavigation } from "@react-navigation/native";
 export default function Home() {
   const navigation=useNavigation();
     const [selectedPolls, setSelectedPolls] = useState({}); 
-        const [userId, setUserId] = useState(null);
-        const [loadingUserId, setLoadingUserId] = useState(true); 
-        const [polls1, setPolls1] = useState([]);
-        const [friendList, setFriendList] = useState([]);
+    const [userId, setUserId] = useState(null);
+    const [loadingUserId, setLoadingUserId] = useState(true); 
+    const [polls1, setPolls1] = useState([]);
+    const [friendList, setFriendList] = useState([]);
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedPoll, setSelectedPoll] = useState(null);
     const [selectedFriends, setSelectedFriends] = useState([]);
-    const [loading, setLoading] = useState(true); // Track overall loading state
+    const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
     const [filteredFriendList, setFilteredFriendList] = useState(friendList);
  useEffect(() => {

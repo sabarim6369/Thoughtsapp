@@ -1,44 +1,34 @@
 {
   "expo": {
     "name": "Thoughts",
-    "slug": "ThoughtsApp",
+    "slug": "Thoughts",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon":  "./assets/logo.png",
+"icon": "./assets/bgremovedlogo.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/logo.png",
+      "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true,
-      "runtimeVersion": {
-        "policy": "appVersion"
-      }
+      "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/logo.png",
-        "backgroundColor": "#ffffff"
-      },
-      "package": "com.msabari.Thoughts",
-      "runtimeVersion": "1.0.0"
+         "foregroundImage": "./assets/bgremovedlogo.png",
+         "backgroundColor": "#ffffff"
+        },
+      "package": "com.skarthiek.Thoughts"
     },
     "web": {
-      "favicon": "./assets/logo.png"
+      "favicon": "./assets/favicon.png"
     },
     "extra": {
-      "expo.build.android.applicationId": "com.msabari.Thoughts",
       "eas": {
-        "projectId": "03cbff95-feeb-433c-800b-99db2059cee7"
+        "projectId": "52c1415e-6fa3-4916-89c2-982edb9f3805"
       }
-    },
-    "updates": {
-      "url": "https://u.expo.dev/03cbff95-feeb-433c-800b-99db2059cee7",
-      "fallbackToCacheTimeout": 0
-    },
-    "owner": "msabari3"
+    }
   }
 }

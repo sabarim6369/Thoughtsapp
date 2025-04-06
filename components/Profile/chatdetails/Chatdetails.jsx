@@ -22,7 +22,7 @@ import { Plus, X, Share2, ChevronRight } from 'lucide-react-native';
 const ChatDetails = ({ route }) => {
   const { friendid,userid,chat } = route.params;
       const navigation = useNavigation();
-      const [activeTab, setActiveTab] = useState('chat'); // 'chat' or 'polls'
+      const [activeTab, setActiveTab] = useState('chat'); 
 
   const [message, setMessage] = useState("");
   const flatListRef = useRef(null);
