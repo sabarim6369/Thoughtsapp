@@ -207,6 +207,7 @@ console.log("😍😍😍😍😍😂😂😂😂",selectedPoll.id)
             <Text style={styles.emptyMessage}>No users found.</Text>
           </View>
         )  : (
+        
           <FlatList
             data={filteredChats}
             keyExtractor={(item, index) =>
@@ -238,11 +239,15 @@ console.log("😍😍😍😍😍😂😂😂😂",selectedPoll.id)
           />
         )
       ) : (
+
         <FlatList
-          data={polls1}
+          data={polls1.slice(0,10)}
           keyExtractor={(item) => item.id}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.pollList}
+          ListHeaderComponent={
+            <Text style={styles.heading}>Top 10 Polls</Text>
+          }
           renderItem={({ item }) => {
             const isFriend = friendList.includes(item.userId);
             const totalVotes =
@@ -432,7 +437,14 @@ const styles = StyleSheet.create({
     borderBottomColor: "#E0E0E0",
     marginTop:hp("3")
   },
-    
+  heading: {
+    fontSize: 20,
+    fontWeight: 'bold',
+marginLeft:wp("5%"), 
+marginBottom:hp("2")
+  
+  }
+,  
   title: {
     fontSize: 18,
     fontWeight: "700",

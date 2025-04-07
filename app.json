@@ -4,7 +4,7 @@
     "slug": "Thoughts",
     "version": "1.0.0",
     "orientation": "portrait",
-"icon": "./assets/reallogo.png",
+    "icon": "./assets/reallogo.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
@@ -17,9 +17,9 @@
     },
     "android": {
       "adaptiveIcon": {
-         "foregroundImage": "./assets/reallogo.png",
-         "backgroundColor": "#ffffff"
-        },
+        "foregroundImage": "./assets/reallogo.png",
+        "backgroundColor": "#ffffff"
+      },
       "package": "com.skarthiek.Thoughts"
     },
     "web": {
@@ -29,6 +29,12 @@
       "eas": {
         "projectId": "52c1415e-6fa3-4916-89c2-982edb9f3805"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/52c1415e-6fa3-4916-89c2-982edb9f3805"
     }
   }
 }
