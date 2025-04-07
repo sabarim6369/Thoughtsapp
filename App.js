@@ -18,6 +18,7 @@ import WelcomeScreen from "./components/Welcomepage/Welcomepage";
 import Messages from "./components/Messages/Messages";
 import FriendList from "./components/Profile/Friendlist/Friendlist";
 import Searchpage from "./components/searchpage/Searchpage";
+import ReportScreen from "./components/Profile/Report/Report";
 const Stack = createStackNavigator();
 
 function HomeWithFooter() {
@@ -84,6 +85,14 @@ function Searchpagewithfooter({ route }) {
   return (
     <View style={{ flex: 1 }}>
       <Searchpage route={route} />
+      <Footer />
+    </View>
+  );
+}
+function Reportwithfooter({ route }) {
+  return (
+    <View style={{ flex: 1 }}>
+      <ReportScreen route={route} />
       <Footer />
     </View>
   );
@@ -166,6 +175,7 @@ export default function App() {
         <Stack.Screen name="Messages" component={MessageswithFooter} />
         <Stack.Screen name="FriendList" component={FriendListWithfooter} />
         <Stack.Screen name="Searchpage" component={Searchpagewithfooter} />
+        <Stack.Screen name="Report" component={Reportwithfooter} />
       </Stack.Navigator>
       <StatusBar style="auto" />
     </NavigationContainer>

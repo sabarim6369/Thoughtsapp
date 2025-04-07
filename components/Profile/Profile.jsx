@@ -4,7 +4,7 @@ import axios from "axios";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
 import API_URL from "../../api";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { MessageCircle, ArrowLeft, Send, Plus, Settings, LogOut, Pen,Share2,Trash2,X,ChevronRight} from 'lucide-react-native';
+import { MessageCircle, ArrowLeft, Send, Plus, Settings, LogOut, Pen,Share2,Trash2,X,ChevronRight,FileWarning } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
@@ -38,10 +38,10 @@ export default function Profile({route}) {
   const [selectedPoll, setSelectedPoll] = useState(null);
   const [friendList, setFriendList] = useState([]);
   const [selectedFriends, setSelectedFriends] = useState([]);
-const[isfriendalready,setisfriend]=useState(false);
-const [isrequested, setisrequested] = useState(false);
-    const [searchQuery, setSearchQuery] = useState("");
-    const [filteredFriendList, setFilteredFriendList] = useState(friendList);
+  const[isfriendalready,setisfriend]=useState(false);
+  const [isrequested, setisrequested] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filteredFriendList, setFilteredFriendList] = useState(friendList);
   useEffect(() => {
     const fetchUserId = async () => {
       try {
@@ -779,6 +779,15 @@ const deletePollFromServer = async (pollId) => {
               >
                 <LogOut size={20} color="#262626" />
                 <Text style={styles.dropdownText}>Logout</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.dropdownItem}
+                onPress={() => {
+                 navigation.navigate("Report")
+                }}
+              >
+                <FileWarning size={20} color="#262626" />
+                <Text style={styles.dropdownText}>Report</Text>
               </TouchableOpacity>
               {!isdifferentusersprofile ? (
                 <TouchableOpacity

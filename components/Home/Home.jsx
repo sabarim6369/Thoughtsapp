@@ -1,5 +1,5 @@
 import React, { useState,useEffect} from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity, FlatList,Modal,Button,TextInput } from "react-native";
+import { View, Text, StyleSheet, Image, TouchableOpacity, FlatList,Modal,Button,TextInput,Dimensions } from "react-native";
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen";
 import Icon from "react-native-vector-icons/Ionicons"; 
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -7,8 +7,10 @@ import API_URL from "../../api";
 import axios from "axios";
 import { Plus, X, Share2, ChevronRight } from 'lucide-react-native';
 import { useNavigation } from "@react-navigation/native";
+const { width } = Dimensions.get('window');
 
-
+const CARD_MARGIN = wp('1%');
+const CARD_WIDTH = (width - (wp('2%') * 2) - (CARD_MARGIN * 8)) / 4; // Calculate width for 4 cards
 export default function Home() {
   const navigation=useNavigation();
     const [selectedPolls, setSelectedPolls] = useState({}); 
@@ -165,6 +167,28 @@ const handleFriendRequest = (friendId) => {
             }
         });
 };
+const formatTimeAgo = (dateString) => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now - date;
+
+  const seconds = Math.floor(diffMs / 1000);
+  const minutes = Math.floor(diffMs / (1000 * 60));
+  const hours = Math.floor(diffMs / (1000 * 60 * 60));
+  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (seconds < 60) return "just now";
+  if (minutes < 60) return `${minutes} minute${minutes > 1 ? "s" : ""} ago`;
+  if (hours < 24) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+  if (days === 1) return `yesterday at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+  if (days <= 3) return `${days} days ago`;
+  
+  return date.toLocaleDateString(undefined, {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+};
 
     return (
       <View style={styles.container}>
@@ -181,6 +205,7 @@ const handleFriendRequest = (friendId) => {
             <Icon name="chatbubble-ellipses-outline" size={30} color="#888" />
           </TouchableOpacity>
         </View>
+        <View style={styles.headerbelowline}></View>
         {loadingUserId ? (
           <Text>Loading...</Text>
         ) : polls1.length === 0 ? (
@@ -211,6 +236,11 @@ const handleFriendRequest = (friendId) => {
                       style={styles.profileImage}
                     />
                     <Text style={styles.userName}>{item.user}</Text>
+                    <Text style={styles.createdAtText}>
+                      {item.createdAt && !isNaN(new Date(item.createdAt))
+                        ? formatTimeAgo(new Date(item.createdAt))
+                        : ""}
+                    </Text>
                   </View>
                   <Text style={styles.question}>{item.question}</Text>
 
@@ -259,8 +289,12 @@ const handleFriendRequest = (friendId) => {
                                   : styles.unselectedOptionText,
                               ]}
                             >
-{option.votes} {option.votes === 1 || option.votes === 0 ? "vote" : "votes"} • {votePercentage}%
-</Text>
+                              {option.votes}{" "}
+                              {option.votes === 1 || option.votes === 0
+                                ? "vote"
+                                : "votes"}{" "}
+                              • {votePercentage}%
+                            </Text>
                           )}
                         </View>
                       </TouchableOpacity>
@@ -383,11 +417,18 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     paddingHorizontal: wp("5%"),
-    marginBottom: hp("2%"),
+    marginBottom: hp("1%"),
+  },
+  headerbelowline:{
+   height:hp("0.09%"),
+   backgroundColor:"gray",
+   marginBottom: hp("2%"),
+
+  
   },
   logo: {
     width: wp("15%"),
-    height: wp("15%"),
+    height: wp("10%"),
     resizeMode: "contain",
     marginLeft:wp("6%")
   },
@@ -400,26 +441,28 @@ const styles = StyleSheet.create({
   card: {
     width: wp("90%"),
     backgroundColor: "#fff",
-    padding: wp("5%"),
-    borderRadius: 10,
+    paddingVertical: hp("1.5%"),
+    paddingHorizontal: wp("3%"),
+        borderRadius: 10,
     shadowColor: "#000",
     shadowOpacity: 0.1,
     shadowRadius: 5,
     elevation: 3,
-    marginBottom: hp("2%"),
+    marginBottom: hp("1%"),
     alignSelf: "center",
   },
   profileRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: hp("1%"),
+    marginBottom: hp("0.5%"),
   },
   profileImage: {
-    width: wp("10%"),
-    height: wp("10%"),
-    borderRadius: 50,
-    marginRight: wp("3%"),
+    width: wp("8%"),
+    height: wp("8%"),
+    borderRadius: wp("4%"),
+    marginRight: wp("2%"),
   },
+  
   userName: {
     fontSize: wp("4%"),
     fontWeight: "bold",
@@ -755,6 +798,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 5,
   }
+  ,createdAtText: {
+    fontSize: wp("3%"),
+    marginLeft:wp("4%"),
+    color: "gray",
+  },
   
   
 });
