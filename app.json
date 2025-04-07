@@ -1,14 +1,14 @@
 {
   "expo": {
-    "name": "Thoughts",
-    "slug": "Thoughts",
+    "name": "Thots",
+    "slug": "Thots",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/reallogo.png",
+    "icon": "./assets/finalapplogo.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/finallogo.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -17,7 +17,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/reallogo.png",
+        "foregroundImage": "./assets/finalapplogo.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.skarthiek.Thoughts"
@@ -27,14 +27,15 @@
     },
     "extra": {
       "eas": {
-        "projectId": "52c1415e-6fa3-4916-89c2-982edb9f3805"
+        "projectId": "dd0b9265-8668-4e35-bac5-3d668952d424"
       }
     },
     "runtimeVersion": {
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/52c1415e-6fa3-4916-89c2-982edb9f3805"
-    }
+      "url": "https://u.expo.dev/dd0b9265-8668-4e35-bac5-3d668952d424"
+    },
+    "owner": "sushant1"
   }
 }
