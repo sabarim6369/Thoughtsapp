@@ -15,7 +15,7 @@
     "@react-navigation/native": "^7.0.19",
     "@react-navigation/stack": "^7.2.3",
     "axios": "^1.8.4",
-    "expo": "~52.0.42",
+    "expo": "~52.0.46",
     "expo-file-system": "^18.0.12",
     "expo-image-picker": "^16.0.6",
     "expo-linear-gradient": "^14.0.2",
@@ -48,7 +48,9 @@
           "react-native-elements",
           "@react-native-community/checkbox",
           "react-native-responsive-screen"
-        ]
+        ],
+        "listUnknownPackages": false
+
       }
     }
   }

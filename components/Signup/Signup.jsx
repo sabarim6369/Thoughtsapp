@@ -69,7 +69,7 @@ function InputField({ field, value, onChange, passwordVisible, togglePasswordVis
           secureTextEntry={field.isPassword && !passwordVisible}
           autoCapitalize={field.key === "email" ? "none" : "words"}
         />
-        {field.isPassword && (
+        {/* {field.isPassword && (
           <TouchableOpacity onPress={togglePasswordVisibility} style={styles.eyeIcon}>
             <Ionicons
               name={passwordVisible ? "eye-outline" : "eye-off-outline"}
@@ -77,7 +77,7 @@ function InputField({ field, value, onChange, passwordVisible, togglePasswordVis
               color="#6c757d"
             />
           </TouchableOpacity>
-        )}
+        )} */}
       </View>
     </View>
   );
@@ -166,63 +166,64 @@ export default function Signup({ navigation }) {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.container}
       > */}
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
-        >
-          <View style={styles.header}>
-            <TouchableOpacity
-              onPress={() => navigation.goBack()}
-              style={styles.backButton}
-            >
-              <Ionicons name="arrow-back" size={BUTTON_ICON_SIZE} color="white" />
-            </TouchableOpacity>
-            <Text style={styles.title}>Create Account</Text>
-            <TouchableOpacity onPress={() => navigation.navigate("Login")}>
-              <Text style={styles.subtitle}>
-                Already have an account?{" "}
-                <Text style={styles.link}>Login</Text>
-              </Text>
-            </TouchableOpacity>
-          </View>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+          >
+            <Ionicons name="arrow-back" size={BUTTON_ICON_SIZE} color="white" />
+          </TouchableOpacity>
+          <Text style={styles.title}>Create Account</Text>
+          <TouchableOpacity onPress={() => navigation.navigate("Login")}>
+            <Text style={styles.subtitle}>
+              Already have an account? <Text style={styles.link}>Login</Text>
+            </Text>
+          </TouchableOpacity>
+        </View>
 
-          <View style={styles.card}>
-            <Image
-              source={{ uri: "https://images.unsplash.com/photo-1496096265110-f83ad7f96608?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80" }}
-              style={styles.backgroundImage}
-            />
-            <View style={styles.formContainer}>
-              {INPUT_FIELDS.map((field) => (
-                <InputField
-                  key={field.key}
-                  field={field}
-                  value={formData[field.key]}
-                  onChange={(value) => handleInputChange(field.key, value)}
-                  passwordVisible={field.isPassword && passwordVisible}
-                  togglePasswordVisibility={handleTogglePassword}
-                />
-              ))}
+        <View style={styles.card}>
+          <Image
+            source={{
+              uri: "https://images.unsplash.com/photo-1496096265110-f83ad7f96608?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
+            }}
+            style={styles.backgroundImage}
+          />
+          <View style={styles.formContainer}>
+            {INPUT_FIELDS.map((field) => (
+              <InputField
+                key={field.key}
+                field={field}
+                value={formData[field.key]}
+                onChange={(value) => handleInputChange(field.key, value)}
+                passwordVisible={field.isPassword && passwordVisible}
+                togglePasswordVisibility={handleTogglePassword}
+              />
+            ))}
 
-              <View style={styles.buttonContainer}>
-                <TouchableOpacity
-                  style={[styles.button, loading && styles.buttonDisabled]}
-                  onPress={handleSubmit}
-                  disabled={loading}
-                >
-                  <Text style={styles.buttonText}>
-                    {loading ? "Creating Account..." : "Sign Up"}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              <Text style={styles.terms}>
-                By signing up, you agree to our{" "}
-                <Text style={styles.termsLink}>Terms of Service</Text> and{" "}
-                <Text style={styles.termsLink}>Privacy Policy</Text>
-              </Text>
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity
+                style={[styles.button, loading && styles.buttonDisabled]}
+                onPress={handleSubmit}
+                disabled={loading}
+              >
+                <Text style={styles.buttonText}>
+                  {loading ? "Creating Account..." : "Sign Up"}
+                </Text>
+              </TouchableOpacity>
             </View>
+
+            <Text style={styles.terms}>
+              By signing up, you agree to our{" "}
+              <Text style={styles.termsLink}>Terms of Service</Text> and{" "}
+              <Text style={styles.termsLink}>Privacy Policy</Text>
+            </Text>
           </View>
-        </ScrollView>
+        </View>
+      </ScrollView>
       {/* </KeyboardAvoidingView> */}
     </LinearGradient>
   );

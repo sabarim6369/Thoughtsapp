@@ -163,9 +163,10 @@ export default function Login({navigation}) {
         });
 
         if (response.status === 200) {
-            const { token, userId, ...otherData } = response.data;
+            const { token, userId,email, ...otherData } = response.data;
             await AsyncStorage.setItem('token', token);
             await AsyncStorage.setItem('userId', userId.toString());
+            await AsyncStorage.setItem('email',email);
             
             setEmail("");
             setPassword("");
@@ -349,7 +350,7 @@ export default function Login({navigation}) {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.rememberContainer}>
+        {/* <View style={styles.rememberContainer}>
           <TouchableOpacity
             style={[styles.checkbox, rememberMe && styles.checkboxChecked]}
             onPress={() => setRememberMe(!rememberMe)}
@@ -359,7 +360,7 @@ export default function Login({navigation}) {
             )}
           </TouchableOpacity>
           <Text style={styles.rememberText}>Remember Me</Text>
-        </View>
+        </View> */}
 
         <TouchableOpacity 
           style={styles.forgotPassword} 

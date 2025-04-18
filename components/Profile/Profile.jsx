@@ -42,11 +42,13 @@ export default function Profile({route}) {
   const [isrequested, setisrequested] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredFriendList, setFilteredFriendList] = useState(friendList);
+  const[email,setemail]=useState()
   useEffect(() => {
     const fetchUserId = async () => {
       try {
         const storedUserId = await AsyncStorage.getItem("userId");
-
+       const emailfromstorage=await AsyncStorage.getItem("email");
+       setemail(emailfromstorage);
         if (useridofdifferentuser) {
           try {
             setUserId(useridofdifferentuser);
@@ -96,7 +98,15 @@ export default function Profile({route}) {
         });
     }
   }, [userId]);
-
+  useEffect(() => {
+    (async () => {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Permission to access media library is required!');
+      }
+    })();
+  }, []);
+  
   useEffect(() => {
     if (userId) {
       const fetchData = async () => {
@@ -163,7 +173,7 @@ useEffect(()=>{
   };
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.All, // Allow all image types
+      mediaTypes: ImagePicker.MediaTypeOptions.Images, // Allow all image types
       allowsEditing: true,
       aspect: [4, 3],
       quality: 1,
@@ -171,42 +181,42 @@ useEffect(()=>{
 
     if (!result.canceled) {
       const imageUri = result.assets[0].uri;
-      setImage(imageUri);
-      setIsLoading(true);
-
-      // Determine MIME type dynamically
-      const fileType = imageUri.split(".").pop();
+      const fileInfo = await FileSystem.getInfoAsync(imageUri);
+      
+      if (!fileInfo.exists) {
+        Alert.alert("Error", "File not found");
+        return;
+      }
+      setIsLoading(true)
+      const fileType = imageUri.split('.').pop();
       const mimeType = `image/${fileType}`;
-
-      // Create FormData
+    
       const formData = new FormData();
-      formData.append("profilePic", {
+      formData.append('profilePic', {
         uri: imageUri,
         name: `profile.${fileType}`,
         type: mimeType,
       });
-      formData.append("userId", userId);
-
+      formData.append('userId', userId);
+    
       try {
-        const response = await axios.post(
-          `${API_URL}/auth/upload-profile-pic`,
-          formData,
-          {
-            headers: { "Content-Type": "multipart/form-data" },
-          }
-        );
-
+        const response = await axios.post(`${API_URL}/auth/upload-profile-pic`, formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+    
         console.log("Upload success:", response.data);
         setuserdata((prev) => ({
           ...prev,
-          profilePic: response.data.profilePic, // Set the new Cloudinary URL
+          profilePic: response.data.profilePic,
         }));
         Alert.alert("Success", "Profile picture updated successfully!");
       } catch (error) {
-        console.error("Upload failed:", error);
-        Alert.alert("Error", "Image upload failed. Try again Later.");
+        console.error("Upload failed:", error.response?.data || error.message);
+        Alert.alert("Error", "Image upload failed. Try again later.");
       } finally {
-        setIsLoading(false); // Hide loader
+        setIsLoading(false);
       }
     }
   };
@@ -256,7 +266,7 @@ useEffect(()=>{
         bio: editedbio,
         userId: userId,
       });
-
+  
       if (response.status === 200) {
         setuserdata((prev) => ({
           ...prev,
@@ -266,12 +276,17 @@ useEffect(()=>{
         setModalVisible(false);
       }
     } catch (error) {
-      console.error(
-        "Error updating details:",
-        error.response?.data || error.message
-      );
+      const errMsg = error.response?.data?.error || error.message;
+  
+      if (errMsg.includes("Username already exists")) {
+        alert("This username is already taken. Please choose another.");
+      } else {
+        console.error("Error updating details:", errMsg);
+        alert("Failed to update profile. Please try again.");
+      }
     }
   };
+  
   const navigatetodetailspage = async (item) => {
     console.log("😍😍😍😍😍", JSON.stringify(item, null, 2));
     navigation.navigate("ChatDetails", { chat: item });
@@ -634,7 +649,7 @@ const deletePollFromServer = async (pollId) => {
               data: suggestedfriends,
               title: "Suggested Friends",
               userId,
-              suggested:true
+              suggested: true,
             })
           }
         >
@@ -647,11 +662,15 @@ const deletePollFromServer = async (pollId) => {
         style={styles.suggestedScroll}
       >
         {suggestedfriends.map((user) => (
-          <TouchableOpacity key={user.id} style={styles.suggestedCard}                 onPress={() =>
-            navigation.navigate("Profile", {
-              useridofdifferentuser: user._id,
-            })
-          }>
+          <TouchableOpacity
+            key={user.id}
+            style={styles.suggestedCard}
+            onPress={() =>
+              navigation.navigate("Profile", {
+                useridofdifferentuser: user._id,
+              })
+            }
+          >
             <Image
               source={{
                 uri:
@@ -927,6 +946,7 @@ const deletePollFromServer = async (pollId) => {
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Edit Profile</Text>
+            <Text style={styles.email}>{email}</Text>
             <TextInput
               style={styles.input}
               placeholder="Enter new username"
@@ -934,19 +954,24 @@ const deletePollFromServer = async (pollId) => {
               onChangeText={setEditedUsername}
             />
             <TextInput
-              style={styles.input}
+              style={styles.bioinput}
               placeholder="Enter Bio"
               value={editedbio}
               onChangeText={seteditedbio}
             />
             <View style={styles.buttonRow}>
-              <Button
-                title="Cancel"
-                onPress={() => setModalVisible(false)}
-                color="#262626"
-              />
-              <Button title="Save" onPress={handleSave} color="#0095f6" />
-            </View>
+  <View style={styles.buttonWrapper}>
+    <Button
+      title="Cancel"
+      onPress={() => setModalVisible(false)}
+      color="#262626"
+    />
+  </View>
+  <View style={styles.buttonWrapper}>
+    <Button title="Save" onPress={handleSave} color="#0095f6" />
+  </View>
+</View>
+
           </View>
         </View>
       </Modal>
@@ -1260,16 +1285,15 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   followButton: {
-    backgroundColor: "#0095f6",
+    backgroundColor: "#0D6EFD",
     borderRadius: 4,
     paddingVertical: 6,
     minWidth: 100, // Ensures enough space for both texts
     alignItems: "center",
     justifyContent: "center",
   },
-  
-  
-  unfollowButton:{
+
+  unfollowButton: {
     backgroundColor: "#ff0a0a",
     borderRadius: 4,
     paddingVertical: 6,
@@ -1348,10 +1372,29 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 12,
   },
+  bioinput: {
+    borderWidth: 1,
+    borderColor: "#dbdbdb",
+    borderRadius: 4,
+    padding: 16,  
+    marginBottom: 12,
+    height: 100,   // Increased height
+    width: '100%', // Full width, adjust as necessary
+    textAlignVertical: 'top', 
+  },
+  
+  email: {
+    marginBottom: hp("2%"),
+  },
   buttonRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginTop: 16,
+    gap: 20, // Optional: add spacing between buttons (React Native 0.71+)
+  },
+
+  buttonWrapper: {
+    flex: 1,
   },
   headerRight: {
     position: "relative",
@@ -1390,203 +1433,203 @@ const styles = StyleSheet.create({
     color: "#262626",
   },
   profilePicContainer: {
-    position: 'relative',
+    position: "relative",
     marginRight: 28,
-},
-profilePic: {
+  },
+  profilePic: {
     width: 86,
     height: 86,
     borderRadius: 43,
-    resizeMode: 'cover', 
-},
-editProfilePicButton: {
-    position: 'absolute',
+    resizeMode: "cover",
+  },
+  editProfilePicButton: {
+    position: "absolute",
     right: -4,
     bottom: -4,
-    backgroundColor: '#0095f6',
+    backgroundColor: "#0D6EFD",
     width: 28,
     height: 28,
     borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     borderWidth: 2,
-    borderColor: '#fff',
-},
-loader: {
-  position: "absolute",
-  top: "50%",
-  left: "50%",
-  transform: [{ translateX: -15 }, { translateY: -15 }],
-},
-pollList: {
-  padding: wp('4%'),
-  paddingBottom: hp('10%')
-},
-pollCard: {
-  backgroundColor: "#FFF",
-  borderRadius: wp('4%'),
-  padding: wp('4%'),
-  marginBottom: hp('2%'),
-  shadowColor: "#000",
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.1,
-  shadowRadius: wp('2%'),
-  elevation: 3,
-},
-pollQuestion: {
-  fontSize: wp('4.5%'),
-  fontWeight: "600",
-  color: "#000",
-  marginBottom: hp('2%'),
-},
-optionBar: {
-  height: hp('6%'),
-  backgroundColor: "#F2F2F7",
-  borderRadius: wp('2%'),
-  marginBottom: hp('1%'),
-  overflow: "hidden",
-  position: "relative",
-},
-optionProgress: {
-  position: "absolute",
-  top: 0,
-  left: 0,
-  bottom: 0,
-  backgroundColor: "rgba(0, 122, 255, 0.1)",
-},
-optionContent: {
-  flexDirection: "row",
-  justifyContent: "space-between",
-  alignItems: "center",
-  padding: wp('3%'),
-  zIndex: 1,
-},
-optionText: {
-  fontSize: wp('4%'),
-  color: "#000",
-},
-voteCount: {
-  fontSize: wp('4%'),
-  fontWeight: "600",
-  color: "#007AFF",
-},
-shareButton: {
-  flexDirection: "row",
-  alignItems: "center",
-  justifyContent: "center",
-  marginTop: hp('2%'),
-  padding: wp('3%'),
-  backgroundColor: "#F2F2F7",
-  borderRadius: wp('2%'),
-},
-shareText: {
-  marginLeft: wp('2%'),
-  fontSize: wp('4%'),
-  color: "#007AFF",
-  fontWeight: "600",
-},actionButtons: {
-  flexDirection: "row",
-  justifyContent: "space-between", 
-  alignItems: "center",
-  marginTop: hp("2%"),
-},
-deleteButton: {
-  flexDirection: "row",
-  alignItems: "center",
-  backgroundColor: "#FFE5E5", 
-  padding: wp("2%"),
-  borderRadius: wp("2%"),
-  marginTop:hp("1%")
-
-},
-deleteText: {
-  color: "red",
-  fontSize: wp("4%"),
-  fontWeight: "600",
-  marginLeft: wp("1%"),
-},
-modalWrapper: {
-  flex: 1,
-  backgroundColor: "rgba(0,0,0,0.5)",
-  justifyContent: "center",
-},
-sharePopup: {
-  backgroundColor: "#FFF",
-  borderRadius: wp("4%"),
-  margin: wp("4%"),
-  maxHeight: hp("80%"),
-},
-popupHeader: {
-  flexDirection: "row",
-  justifyContent: "space-between",
-  alignItems: "center",
-  padding: wp("4%"),
-  borderBottomWidth: 1,
-  borderBottomColor: "#E5E5EA",
-},
-popupTitle: {
-  fontSize: wp("5%"),
-  fontWeight: "600",
-  color: "#000",
-},
-friendOption: {
-  flexDirection: "row",
-  alignItems: "center",
-  padding: wp("4%"),
-},
-activeFriend: {
-  backgroundColor: "#F2F2F7",
-},
-friendImage: {
-  width: wp("10%"),
-  height: wp("10%"),
-  borderRadius: wp("5%"),
-  marginRight: wp("3%"),
-},
-friendLabel: {
-  flex: 1,
-  fontSize: wp("4%"),
-  color: "#000",
-},
-selectionIndicator: {
-  width: wp("6%"),
-  height: wp("6%"),
-  borderRadius: wp("3%"),
-  borderWidth: 2,
-  borderColor: "#E5E5EA",
-  justifyContent: "center",
-  alignItems: "center",
-},
-selectedIndicator: {
-  backgroundColor: "#007AFF",
-  borderColor: "#007AFF",
-},
-confirmButton: {
-  margin: wp("4%"),
-  padding: wp("4%"),
-  backgroundColor: "#007AFF",
-  borderRadius: wp("2%"),
-  alignItems: "center",
-},
-confirmButtonText: {
-  color: "#FFF",
-  fontSize: wp("4%"),
-  fontWeight: "600",
-},
-searchBar: {
-  height: 40,
-  margin: wp('4%'),
-  borderRadius: wp('6%'),
-  paddingHorizontal: wp('4%'),
-  backgroundColor: "#F5F5F5",
-  borderWidth: 1.5,
-  borderColor: "#D0D0D0",
-  fontSize: wp('4%'),
-  color: "#333",
-  elevation: 3, // Add subtle shadow for a floating effect (Android)
-  shadowColor: "#000", // Shadow for iOS
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.1,
-  shadowRadius: 5,
-}
+    borderColor: "#fff",
+  },
+  loader: {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    transform: [{ translateX: -15 }, { translateY: -15 }],
+  },
+  pollList: {
+    padding: wp("4%"),
+    paddingBottom: hp("10%"),
+  },
+  pollCard: {
+    backgroundColor: "#FFF",
+    borderRadius: wp("4%"),
+    padding: wp("4%"),
+    marginBottom: hp("2%"),
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: wp("2%"),
+    elevation: 3,
+  },
+  pollQuestion: {
+    fontSize: wp("4.5%"),
+    fontWeight: "600",
+    color: "#000",
+    marginBottom: hp("2%"),
+  },
+  optionBar: {
+    height: hp("6%"),
+    backgroundColor: "#F2F2F7",
+    borderRadius: wp("2%"),
+    marginBottom: hp("1%"),
+    overflow: "hidden",
+    position: "relative",
+  },
+  optionProgress: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 122, 255, 0.1)",
+  },
+  optionContent: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: wp("3%"),
+    zIndex: 1,
+  },
+  optionText: {
+    fontSize: wp("4%"),
+    color: "#000",
+  },
+  voteCount: {
+    fontSize: wp("4%"),
+    fontWeight: "600",
+    color: "#007AFF",
+  },
+  shareButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: hp("2%"),
+    padding: wp("3%"),
+    backgroundColor: "#F2F2F7",
+    borderRadius: wp("2%"),
+  },
+  shareText: {
+    marginLeft: wp("2%"),
+    fontSize: wp("4%"),
+    color: "#007AFF",
+    fontWeight: "600",
+  },
+  actionButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: hp("2%"),
+  },
+  deleteButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFE5E5",
+    padding: wp("2%"),
+    borderRadius: wp("2%"),
+    marginTop: hp("1%"),
+  },
+  deleteText: {
+    color: "red",
+    fontSize: wp("4%"),
+    fontWeight: "600",
+    marginLeft: wp("1%"),
+  },
+  modalWrapper: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+  },
+  sharePopup: {
+    backgroundColor: "#FFF",
+    borderRadius: wp("4%"),
+    margin: wp("4%"),
+    maxHeight: hp("80%"),
+  },
+  popupHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: wp("4%"),
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E5EA",
+  },
+  popupTitle: {
+    fontSize: wp("5%"),
+    fontWeight: "600",
+    color: "#000",
+  },
+  friendOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: wp("4%"),
+  },
+  activeFriend: {
+    backgroundColor: "#F2F2F7",
+  },
+  friendImage: {
+    width: wp("10%"),
+    height: wp("10%"),
+    borderRadius: wp("5%"),
+    marginRight: wp("3%"),
+  },
+  friendLabel: {
+    flex: 1,
+    fontSize: wp("4%"),
+    color: "#000",
+  },
+  selectionIndicator: {
+    width: wp("6%"),
+    height: wp("6%"),
+    borderRadius: wp("3%"),
+    borderWidth: 2,
+    borderColor: "#E5E5EA",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  selectedIndicator: {
+    backgroundColor: "#007AFF",
+    borderColor: "#007AFF",
+  },
+  confirmButton: {
+    margin: wp("4%"),
+    padding: wp("4%"),
+    backgroundColor: "#007AFF",
+    borderRadius: wp("2%"),
+    alignItems: "center",
+  },
+  confirmButtonText: {
+    color: "#FFF",
+    fontSize: wp("4%"),
+    fontWeight: "600",
+  },
+  searchBar: {
+    height: 40,
+    margin: wp("4%"),
+    borderRadius: wp("6%"),
+    paddingHorizontal: wp("4%"),
+    backgroundColor: "#F5F5F5",
+    borderWidth: 1.5,
+    borderColor: "#D0D0D0",
+    fontSize: wp("4%"),
+    color: "#333",
+    elevation: 3, // Add subtle shadow for a floating effect (Android)
+    shadowColor: "#000", // Shadow for iOS
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+  },
 });

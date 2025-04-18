@@ -129,7 +129,12 @@ const cancelFriendRequest = (id) => {
           }
           contentContainerStyle={{ paddingBottom: hp(5) }}
           renderItem={({ item }) => (
-            <View style={styles.card}>
+            
+            <TouchableOpacity style={styles.card}  onPress={() =>
+              navigation.navigate("Profile", {
+                useridofdifferentuser: item._id,
+              })
+            }>
               <Image
                 source={{
                   uri:
@@ -169,7 +174,7 @@ const cancelFriendRequest = (id) => {
                   </Text>
                 </TouchableOpacity>
               )}
-            </View>
+            </TouchableOpacity>
           )}
         />
       )}
