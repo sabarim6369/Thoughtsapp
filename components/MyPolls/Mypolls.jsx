@@ -21,7 +21,7 @@ export default function Mypolls() {
   const [loadingUserId, setLoadingUserId] = useState(true);
   const [pollData, setPollData] = useState({
     question: "",
-    options: [{ id: 1, text: "" }],
+    options: ["", "", ""],
   });
 
   useEffect(() => {
@@ -40,33 +40,10 @@ export default function Mypolls() {
     fetchUserId();
   }, []);
 
-  const addOption = () => {
-    if (pollData.options.length < 3) {
-      setPollData((prev) => ({
-        ...prev,
-        options: [...prev.options, { id: Date.now(), text: "" }],
-      }));
-    } else {
-      alert("You can only add up to 3 options.");
-    }
-  };
-
-  const removeOption = (id) => {
-    if (pollData.options.length > 1) {
-      setPollData((prev) => ({
-        ...prev,
-        options: prev.options.filter((option) => option.id !== id),
-      }));
-    }
-  };
-
-  const updateOption = (id, text) => {
-    setPollData((prev) => ({
-      ...prev,
-      options: prev.options.map((option) =>
-        option.id === id ? { ...option, text } : option
-      ),
-    }));
+  const updateOption = (index, text) => {
+    const newOptions = [...pollData.options];
+    newOptions[index] = text;
+    setPollData({ ...pollData, options: newOptions });
   };
 
   const handleCreatePoll = async () => {
@@ -75,12 +52,10 @@ export default function Mypolls() {
       return;
     }
 
-    const validOptions = pollData.options
-      .map((opt) => opt.text.trim())
-      .filter((text) => text);
+    const validOptions = pollData.options.filter((text) => text.trim());
 
-    if (validOptions.length < 1) {
-      alert("Please add at least one option");
+    if (validOptions.length < 2) {
+      alert("Please add at least two thoughts");
       return;
     }
 
@@ -100,17 +75,14 @@ export default function Mypolls() {
       alert("Poll created successfully!");
       setPollData({
         question: "",
-        options: [{ id: 1, text: "" }],
+        options: ["", "", ""],
       });
     } catch (error) {
       console.error("Error creating poll:", error);
       alert("Failed to create poll. Please try again.");
     }
   };
-  const getThoughtLabel = (index) => {
-    const labels = ["First thought", "Second thought", "Third thought", "Fourth thought", "Fifth thought"];
-    return labels[index] || `Thought ${index + 1}`;
-  };
+
   
   if (loadingUserId) {
     return <ActivityIndicator size="large" color="#007bff" style={styles.loader} />;
@@ -122,56 +94,32 @@ export default function Mypolls() {
 
       <TextInput
         style={styles.questionInput}
-        placeholder="Tell us what you think"
+        placeholder="Say something!"
         value={pollData.question}
         onChangeText={(text) =>
-          setPollData((prev) => ({ ...prev, question: text }))
+          setPollData({ ...pollData, question: text })
         }
         placeholderTextColor="#999"
         multiline
       />
 
-      <Text style={styles.optionsLabel}>Add a thought</Text>
-
       {pollData.options.map((option, index) => (
-        <View key={option.id} style={styles.optionContainer}>
-          <TextInput
-            style={styles.optionInput}
-            placeholder={getThoughtLabel(index)}
-            placeholderTextColor="#aaa"
-            value={option.text}
-            onChangeText={(text) => updateOption(option.id, text)}
-          />
-
-          {pollData.options.length > 1 && (
-            <TouchableOpacity
-              style={styles.removeOption}
-              onPress={() => removeOption(option.id)}
-            >
-              <X size={20} color="#ff3b30" />
-            </TouchableOpacity>
-          )}
-        </View>
+        <TextInput
+          key={index}
+          style={styles.thoughtInput}
+          placeholder={`Thought ${index + 1}`}
+          placeholderTextColor="#999"
+          value={option}
+          onChangeText={(text) => updateOption(index, text)}
+        />
       ))}
 
-      {pollData.options.length < 3 && (
-        <TouchableOpacity style={styles.addOptionButton} onPress={addOption}>
-          <Plus size={18} color="#007AFF" />
-          <Text style={styles.addOptionText}>Add Another thought</Text>
-        </TouchableOpacity>
-      )}
-
       <TouchableOpacity
-        style={styles.createButton}
+        style={styles.postButton}
         activeOpacity={0.8}
         onPress={handleCreatePoll}
       >
-        <LinearGradient
-          colors={["#0095f6", "#0095f6"]}
-          style={styles.gradientButton}
-        >
-          <Text style={styles.createButtonText}>Post</Text>
-        </LinearGradient>
+        <Text style={styles.postButtonText}>Post</Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -190,92 +138,47 @@ const styles = StyleSheet.create({
     fontSize: wp('7%'),
     fontWeight: 'bold',
     color: '#0f172a',
-    marginBottom: hp('1%'),
+    marginBottom: hp('3%'),
     marginTop:hp("4%")
   },
 
   questionInput: {
-    borderRadius: wp('3%'),
-    paddingVertical: hp('2%'),
-    // paddingHorizontal: wp('4%'),
-    fontSize: wp('4.5%'),
-    height: hp('20%'), // set a fixed height
-
-    shadowRadius: 2,
-    marginBottom: hp('10%'),
-  },
-
-  optionsLabel: {
-    marginTop:hp("10"),
-    fontSize: wp('4.3%'),
-    fontWeight: '600',
-    marginBottom: hp('1.5%'),
-    color: '#1e293b',
-  },
-
-  optionContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: '#ffffff',
-    borderRadius: wp('2.5%'),
-    paddingHorizontal: wp('4%'),
-    paddingVertical: hp('1.5%'),
-    marginBottom: hp('1.2%'),
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-
-  optionInput: {
-    flex: 1,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: wp('2%'),
+    padding: wp('4%'),
     fontSize: wp('4%'),
-    color: '#111827',
-  },
-
-  removeOption: {
-    marginLeft: wp('3%'),
-    backgroundColor: '#fee2e2',
-    padding: wp('1.5%'),
-    borderRadius: 100,
-  },
-
-  addOptionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: hp('2%'),
+    color: '#333',
+    textAlignVertical: 'top',
+    minHeight: hp('20%'),
     marginBottom: hp('3%'),
-    alignSelf: 'flex-start',
   },
 
-  addOptionText: {
-    marginLeft: wp('2%'),
+  thoughtInput: {
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: wp('2%'),
+    padding: wp('4%'),
     fontSize: wp('4%'),
-    color: '#2563eb',
-    fontWeight: '600',
+    color: '#333',
+    marginBottom: hp('2%'),
   },
 
-  createButton: {
-    marginTop: hp('2%'),
-  },
-
-  gradientButton: {
-    borderRadius: wp('3%'),
+  postButton: {
+    backgroundColor: '#4A90E2',
+    borderRadius: wp('2%'),
     paddingVertical: hp('1.8%'),
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 3,
+    marginTop: hp('2%'),
   },
 
-  createButtonText: {
+  postButtonText: {
     color: '#ffffff',
     fontSize: wp('4.5%'),
-    fontWeight: '700',
+    fontWeight: '600',
   },
 
   loader: {

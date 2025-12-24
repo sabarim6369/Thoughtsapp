@@ -34,9 +34,9 @@ const Footer = () => {
 
 const menuItems = [
   { name: "home", type: "feather", screen: "Home" }, // Home icon
-  { name: "search", type: "feather", screen: "Searchpage" }, // Profile icon
+  // { name: "search", type: "feather", screen: "Searchpage" }, // Profile icon
 
-  { name: "plus", type: "feather", screen: "Mypolls" }, // Menu icon (three lines)
+  { name: "copy", type: "feather", screen: "Mypolls" }, // Menu icon (three lines)
   
 
     { name: "bell", type: "feather", screen: "Notifications" }, // Notification (Bell)

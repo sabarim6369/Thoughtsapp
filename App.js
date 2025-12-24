@@ -6,6 +6,7 @@ import { jwtDecode } from "jwt-decode";
 import { useEffect, useState } from "react";
 import { View, ActivityIndicator } from "react-native";
 
+
 import Footer from "./components/Footer";
 import Login from "./components/Login/Login";
 import Signup from "./components/Signup/Signup";

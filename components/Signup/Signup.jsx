@@ -8,134 +8,56 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import {
-  widthPercentageToDP as wp,
-  heightPercentageToDP as hp,
-} from "react-native-responsive-screen";
-import { LinearGradient } from "expo-linear-gradient";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { Picker } from "@react-native-picker/picker";
 import axios from "axios";
 import API_URL from "../../api";
 
-const INPUT_FIELDS = [
-  {
-    label: "Full Name",
-    key: "username",
-    icon: "person-outline",
-    placeholder: "John Doe",
-  },
-  {
-    label: "Email",
-    key: "email",
-    icon: "mail-outline",
-    placeholder: "johndoe@example.com",
-    keyboardType: "email-address",
-  },
-  {
-    label: "Phone Number",
-    key: "phoneNumber",
-    icon: "call-outline",
-    placeholder: "+1234567890",
-    keyboardType: "phone-pad",
-  },
-  {
-    label: "Password",
-    key: "password",
-    icon: "lock-closed-outline",
-    isPassword: true,
-    placeholder: "••••••••",
-  },
-];
-
-function InputField({ field, value, onChange, passwordVisible, togglePasswordVisibility }) {
-  return (
-    <View style={styles.inputWrapper}>
-      <Text style={styles.label}>{field.label}</Text>
-      <View style={styles.inputContainer}>
-        <Ionicons
-          name={field.icon}
-          size={24}
-          color="#6c757d"
-          style={styles.inputIcon}
-        />
-        <TextInput
-          style={styles.input}
-          value={value}
-          onChangeText={onChange}
-          placeholder={field.placeholder}
-          keyboardType={field.keyboardType}
-          secureTextEntry={field.isPassword && !passwordVisible}
-          autoCapitalize={field.key === "email" ? "none" : "words"}
-        />
-        {/* {field.isPassword && (
-          <TouchableOpacity onPress={togglePasswordVisibility} style={styles.eyeIcon}>
-            <Ionicons
-              name={passwordVisible ? "eye-outline" : "eye-off-outline"}
-              size={24}
-              color="#6c757d"
-            />
-          </TouchableOpacity>
-        )} */}
-      </View>
-    </View>
-  );
-}
-
-const ICON_SIZE = wp("5%");
-const BUTTON_ICON_SIZE = wp("6%");
-const STYLES = {
-  scrollPaddingH: wp("5%"),
-  scrollPaddingTop: hp("5%"),
-  scrollPaddingBottom: hp("3%"),
-  headerMargin: hp("3%"),
-  backButtonSize: wp("12%"),
-  backButtonRadius: wp("6%"),
-  backButtonMargin: hp("2%"),
-  titleSize: wp("8%"),
-  titleMargin: hp("1%"),
-  subtitleSize: wp("4%"),
-  cardRadius: wp("5%"),
-  imageHeight: hp("20%"),
-  formPadding: wp("5%"),
-  inputMargin: hp("2%"),
-  labelSize: wp("3.5%"),
-  labelMargin: hp("0.5%"),
-  labelPadding: wp("1%"),
-  inputRadius: wp("3%"),
-  inputPadding: wp("3%"),
-  inputFontSize: wp("4%"),
-  buttonMargin: hp("2%"),
-  buttonPadding: hp("2%"),
-  buttonTextSize: wp("4.5%"),
-  termsMargin: hp("2%"),
-  termsFontSize: wp("3.5%"),
-};
-
 export default function Signup({ navigation }) {
   const [formData, setFormData] = useState({
-    username: "",
+    fullName: "",
     email: "",
-    phoneNumber: "",
+    username: "",
     password: "",
+    dateOfBirth: new Date(),
+    gender: "",
   });
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleTogglePassword = () => {
-    setPasswordVisible(!passwordVisible);
+  const handleDateChange = (event, selectedDate) => {
+    setShowDatePicker(Platform.OS === "ios");
+    if (selectedDate) {
+      setFormData({ ...formData, dateOfBirth: selectedDate });
+    }
+  };
+
+  const formatDate = (date) => {
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
   };
 
   const handleSubmit = async () => {
     try {
-      if (!formData.username || !formData.email || !formData.password || !formData.phoneNumber) {
+      if (!formData.fullName || !formData.email || !formData.username || !formData.password || !formData.gender) {
         alert("Please fill in all fields before submitting.");
         return;
       }
 
       setLoading(true);
-      const response = await axios.post(`${API_URL}/auth/signup`, formData);
+      const response = await axios.post(`${API_URL}/auth/signup`, {
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
+        fullName: formData.fullName,
+        dateOfBirth: formData.dateOfBirth.toISOString(),
+        gender: formData.gender,
+      });
       alert(response?.data?.message || "Account created successfully!");
       navigation.navigate("Login");
     } catch (error) {
@@ -153,58 +75,128 @@ export default function Signup({ navigation }) {
     }
   };
 
-  const handleInputChange = (key, value) => {
-    setFormData({ ...formData, [key]: value });
-  };
-
   return (
-    <LinearGradient
-      colors={["#rgba(7, 242, 223, 1)", "#rgba(69, 143, 208, 1)"]}
-      style={styles.gradient}
-    >
-      {/* <KeyboardAvoidingView
+    <View style={styles.container}>
+      <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.container}
-      > */}
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        style={styles.keyboardView}
       >
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-          >
-            <Ionicons name="arrow-back" size={BUTTON_ICON_SIZE} color="white" />
-          </TouchableOpacity>
-          <Text style={styles.title}>Create Account</Text>
-          <TouchableOpacity onPress={() => navigation.navigate("Login")}>
-            <Text style={styles.subtitle}>
-              Already have an account? <Text style={styles.link}>Login</Text>
-            </Text>
-          </TouchableOpacity>
-        </View>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          <View style={styles.card}>
+            <Text style={styles.title}>Create an account</Text>
+            
+            <View style={styles.loginLinkContainer}>
+              <Text style={styles.loginText}>Already have an account? </Text>
+              <TouchableOpacity onPress={() => navigation.navigate("Login")}>
+                <Text style={styles.loginLink}>Login</Text>
+              </TouchableOpacity>
+            </View>
 
-        <View style={styles.card}>
-          <Image
-            source={{
-              uri: "https://images.unsplash.com/photo-1496096265110-f83ad7f96608?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
-            }}
-            style={styles.backgroundImage}
-          />
-          <View style={styles.formContainer}>
-            {INPUT_FIELDS.map((field) => (
-              <InputField
-                key={field.key}
-                field={field}
-                value={formData[field.key]}
-                onChange={(value) => handleInputChange(field.key, value)}
-                passwordVisible={field.isPassword && passwordVisible}
-                togglePasswordVisibility={handleTogglePassword}
-              />
-            ))}
+            <View style={styles.formContainer}>
+              {/* Full Name */}
+              <View style={styles.inputWrapper}>
+                <Text style={styles.label}>Full Name</Text>
+                <TextInput
+                  style={styles.input}
+                  value={formData.fullName}
+                  onChangeText={(value) => setFormData({ ...formData, fullName: value })}
+                  placeholder=""
+                  autoCapitalize="words"
+                />
+              </View>
 
-            <View style={styles.buttonContainer}>
+              {/* Email */}
+              <View style={styles.inputWrapper}>
+                <Text style={styles.label}>Email</Text>
+                <TextInput
+                  style={styles.input}
+                  value={formData.email}
+                  onChangeText={(value) => setFormData({ ...formData, email: value })}
+                  placeholder=""
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              </View>
+
+              {/* Username */}
+              <View style={styles.inputWrapper}>
+                <Text style={styles.label}>Username</Text>
+                <TextInput
+                  style={styles.input}
+                  value={formData.username}
+                  onChangeText={(value) => setFormData({ ...formData, username: value })}
+                  placeholder=""
+                  autoCapitalize="none"
+                />
+              </View>
+
+              {/* Password */}
+              <View style={styles.inputWrapper}>
+                <Text style={styles.label}>New Password</Text>
+                <View style={styles.passwordContainer}>
+                  <TextInput
+                    style={styles.passwordInput}
+                    value={formData.password}
+                    onChangeText={(value) => setFormData({ ...formData, password: value })}
+                    placeholder=""
+                    secureTextEntry={!passwordVisible}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setPasswordVisible(!passwordVisible)}
+                    style={styles.eyeIcon}
+                  >
+                    <Ionicons
+                      name={passwordVisible ? "eye-outline" : "eye-off-outline"}
+                      size={20}
+                      color="#999"
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Date of Birth */}
+              <View style={styles.inputWrapper}>
+                <Text style={styles.label}>Date of Birth</Text>
+                <TouchableOpacity
+                  style={styles.dateInput}
+                  onPress={() => setShowDatePicker(true)}
+                >
+                  <Text style={styles.dateText}>{formatDate(formData.dateOfBirth)}</Text>
+                  <Ionicons name="calendar-outline" size={20} color="#999" />
+                </TouchableOpacity>
+              </View>
+
+              {showDatePicker && (
+                <DateTimePicker
+                  value={formData.dateOfBirth}
+                  mode="date"
+                  display={Platform.OS === "ios" ? "spinner" : "default"}
+                  onChange={handleDateChange}
+                  maximumDate={new Date()}
+                />
+              )}
+
+              {/* Gender */}
+              <View style={styles.inputWrapper}>
+                <Text style={styles.label}>Select Gender</Text>
+                <View style={styles.pickerContainer}>
+                  <Picker
+                    selectedValue={formData.gender}
+                    onValueChange={(value) => setFormData({ ...formData, gender: value })}
+                    style={styles.picker}
+                  >
+                    <Picker.Item label="Select Gender" value="" />
+                    <Picker.Item label="Male" value="male" />
+                    <Picker.Item label="Female" value="female" />
+                    <Picker.Item label="Other" value="other" />
+                  </Picker>
+                </View>
+              </View>
+
+              {/* Sign Up Button */}
               <TouchableOpacity
                 style={[styles.button, loading && styles.buttonDisabled]}
                 onPress={handleSubmit}
@@ -215,143 +207,125 @@ export default function Signup({ navigation }) {
                 </Text>
               </TouchableOpacity>
             </View>
-
-            <Text style={styles.terms}>
-              By signing up, you agree to our{" "}
-              <Text style={styles.termsLink}>Terms of Service</Text> and{" "}
-              <Text style={styles.termsLink}>Privacy Policy</Text>
-            </Text>
           </View>
-        </View>
-      </ScrollView>
-      {/* </KeyboardAvoidingView> */}
-    </LinearGradient>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  gradient: {
-    flex: 1,
-  },
   container: {
+    flex: 1,
+    backgroundColor: "#00D4D4",
+  },
+  keyboardView: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: STYLES.scrollPaddingH,
-    paddingTop: STYLES.scrollPaddingTop,
-    paddingBottom: STYLES.scrollPaddingBottom,
-  },
-  header: {
-    marginBottom: STYLES.headerMargin,
-  },
-  backButton: {
-    width: STYLES.backButtonSize,
-    height: STYLES.backButtonSize,
-    borderRadius: STYLES.backButtonRadius,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
     justifyContent: "center",
-    alignItems: "center",
-    marginBottom: STYLES.backButtonMargin,
-  },
-  title: {
-    fontSize: STYLES.titleSize,
-    fontWeight: "bold",
-    color: "white",
-    marginBottom: STYLES.titleMargin,
-  },
-  subtitle: {
-    fontSize: STYLES.subtitleSize,
-    color: "rgba(255, 255, 255, 0.8)",
-  },
-  link: {
-    color: "white",
-    fontWeight: "bold",
+    padding: 20,
   },
   card: {
     backgroundColor: "white",
-    borderRadius: STYLES.cardRadius,
-    overflow: "hidden",
+    borderRadius: 20,
+    padding: 30,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 4,
     },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
     elevation: 5,
   },
-  backgroundImage: {
-    width: "100%",
-    height: STYLES.imageHeight,
-    resizeMode: "cover",
+  title: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#000",
+    marginBottom: 8,
+  },
+  loginLinkContainer: {
+    flexDirection: "row",
+    marginBottom: 24,
+  },
+  loginText: {
+    fontSize: 14,
+    color: "#666",
+  },
+  loginLink: {
+    fontSize: 14,
+    color: "#00B8D4",
+    fontWeight: "500",
   },
   formContainer: {
-    padding: STYLES.formPadding,
+    width: "100%",
   },
   inputWrapper: {
-    marginBottom: STYLES.inputMargin,
+    marginBottom: 16,
   },
   label: {
-    fontSize: STYLES.labelSize,
-    color: "#495057",
-    marginBottom: STYLES.labelMargin,
-    marginLeft: STYLES.labelPadding,
-    fontWeight: "600",
-  },
-  inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1.5,
-    borderRadius: STYLES.inputRadius,
-    borderColor: "#dee2e6",
-    backgroundColor: "#f8f9fa",
-  },
-  inputIcon: {
-    padding: STYLES.inputPadding,
+    fontSize: 12,
+    color: "#666",
+    marginBottom: 8,
   },
   input: {
+    backgroundColor: "#F5F5F5",
+    borderRadius: 8,
+    padding: 14,
+    fontSize: 15,
+    color: "#000",
+  },
+  passwordContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F5F5F5",
+    borderRadius: 8,
+    paddingRight: 12,
+  },
+  passwordInput: {
     flex: 1,
-    fontSize: STYLES.inputFontSize,
-    padding: STYLES.inputPadding,
-    color: "#495057",
+    padding: 14,
+    fontSize: 15,
+    color: "#000",
   },
   eyeIcon: {
-    padding: STYLES.inputPadding,
+    padding: 4,
   },
-  buttonContainer: {
-    marginTop: STYLES.buttonMargin,
+  dateInput: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#F5F5F5",
+    borderRadius: 8,
+    padding: 14,
+  },
+  dateText: {
+    fontSize: 15,
+    color: "#000",
+  },
+  pickerContainer: {
+    backgroundColor: "#F5F5F5",
+    borderRadius: 8,
+    overflow: "hidden",
+  },
+  picker: {
+    height: 50,
   },
   button: {
-    backgroundColor: "#4158d0",
-    padding: STYLES.buttonPadding,
-    borderRadius: STYLES.inputRadius,
+    backgroundColor: "#4A90E2",
+    borderRadius: 8,
+    padding: 16,
     alignItems: "center",
-    shadowColor: "#4158d0",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    marginTop: 8,
   },
   buttonDisabled: {
-    backgroundColor: "#a8b1ff",
+    backgroundColor: "#A8C8E8",
   },
   buttonText: {
     color: "white",
-    fontSize: STYLES.buttonTextSize,
-    fontWeight: "bold",
-  },
-  terms: {
-    marginTop: STYLES.termsMargin,
-    textAlign: "center",
-    color: "#6c757d",
-    fontSize: STYLES.termsFontSize,
-  },
-  termsLink: {
-    color: "#4158d0",
+    fontSize: 16,
     fontWeight: "600",
   },
 });

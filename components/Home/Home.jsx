@@ -24,6 +24,7 @@ export default function Home() {
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
     const [filteredFriendList, setFilteredFriendList] = useState(friendList);
+    const [likedPolls, setLikedPolls] = useState({});
  useEffect(() => {
     const fetchUserId = async () => {
         try {
@@ -151,6 +152,34 @@ const toggleFriendSelection = (id) => {
     );
 };
 
+const handleLike = async (pollId) => {
+    try {
+        const isLiked = likedPolls[pollId];
+        
+        const response = await axios.post(`${API_URL}/poll/likePoll`, {
+            pollId,
+            userId,
+        });
+
+        if (response.status === 200) {
+            setLikedPolls(prev => ({
+                ...prev,
+                [pollId]: !isLiked
+            }));
+            
+            // Update poll list with new like count
+            setPolls1(prevPolls => prevPolls.map(poll => 
+                poll.id === pollId 
+                    ? { ...poll, likes: response.data.likes, isLikedByUser: response.data.isLikedByUser }
+                    : poll
+            ));
+        }
+    } catch (error) {
+        console.error("Like error:", error);
+        alert(error.response?.data?.message || "Failed to like poll.");
+    }
+};
+
 
 
 const handleFriendRequest = (friendId) => {
@@ -253,77 +282,67 @@ const formatTimeAgo = (dateString) => {
                     );
                     const votePercentage =
                       totalVotes > 0
-                        ? ((option.votes / totalVotes) * 100).toFixed(1)
+                        ? ((option.votes / totalVotes) * 100).toFixed(0)
                         : 0;
 
-                    const hasVoted = item.userVotedOptionIndex !== -1; // Check if the user has voted
+                    const hasVoted = item.userVotedOptionIndex !== -1;
 
                     return (
                       <TouchableOpacity
                         key={index}
                         style={[
                           styles.optionButton,
-                          isSelected ? styles.selectedOption : null,
+                          hasVoted && !isSelected && styles.unselectedVotedOption,
+                          isSelected && styles.selectedOption,
                         ]}
                         onPress={() => handleVote(item.id, index)}
-                        disabled={hasVoted} // Disable voting if user has already voted
+                        disabled={hasVoted}
                       >
-                        <View style={styles.optionContent}>
+                        <Text
+                          style={[
+                            styles.optionText,
+                            isSelected && styles.selectedOptionText,
+                            hasVoted && !isSelected && styles.unselectedVotedText,
+                          ]}
+                        >
+                          {option.text}
+                        </Text>
+
+                        {hasVoted && (
                           <Text
                             style={[
-                              styles.optionText,
-                              isSelected
-                                ? styles.selectedOptionText
-                                : styles.unselectedOptionText,
+                              styles.votePercentage,
+                              isSelected && styles.selectedOptionText,
+                              !isSelected && styles.unselectedVotedText,
                             ]}
                           >
-                            {option.text} {isSelected && " ✔"}
+                            {votePercentage}%
                           </Text>
-
-                          {hasVoted && (
-                            <Text
-                              style={[
-                                styles.votePercentage,
-                                isSelected
-                                  ? styles.selectedOptionText
-                                  : styles.unselectedOptionText,
-                              ]}
-                            >
-                              {option.votes}{" "}
-                              {option.votes === 1 || option.votes === 0
-                                ? "vote"
-                                : "votes"}{" "}
-                              • {votePercentage}%
-                            </Text>
-                          )}
-                        </View>
+                        )}
                       </TouchableOpacity>
                     );
                   })}
 
-                  <View style={styles.actionIcons}>
+                  <View style={styles.pollActions}>
                     <TouchableOpacity
-                      onPress={() => handleSharePress(item)}
-                      style={styles.iconSpacing}
+                      style={styles.likeButton}
+                      onPress={() => handleLike(item.id)}
                     >
                       <Icon
-                        name="share-social-outline"
-                        size={24}
-                        color="#007bff"
+                        name={likedPolls[item.id] || item.isLikedByUser ? "heart" : "heart-outline"}
+                        size={20}
+                        color={likedPolls[item.id] || item.isLikedByUser ? "#FF3B30" : "#8E8E93"}
                       />
+                      <Text style={styles.likeCount}>{item.likes || 0}</Text>
                     </TouchableOpacity>
 
-                    {/* {!isFriend && (
-                      <TouchableOpacity
-                        onPress={() => handleFriendRequest(item.userid)}
-                      >
-                        <Icon
-                          name="person-add-outline"
-                          size={24}
-                          color="#007bff"
-                        />
-                      </TouchableOpacity>
-                    )} */}
+                    <TouchableOpacity onPress={() => handleSharePress(item)}>
+                      <Icon
+                        name="share-social-outline"
+                        size={20}
+                        color="#8E8E93"
+                      />
+                    </TouchableOpacity>
                   </View>
                 </View>
               );
@@ -476,19 +495,32 @@ const styles = StyleSheet.create({
     paddingVertical: hp("1.5%"),
     paddingHorizontal: hp("2%"),
     borderWidth: 1,
-    borderColor: "#007bff",
-    borderRadius: 10,
+    borderColor: "#E0E0E0",
+    borderRadius: 8,
     marginVertical: hp("0.5%"),
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#F5F5F5",
   },
   selectedOption: {
-    backgroundColor: "#007bff",
+    backgroundColor: "#5A6C7D",
+    borderColor: "#5A6C7D",
+  },
+  unselectedVotedOption: {
+    backgroundColor: "#F5F5F5",
+    borderColor: "#E0E0E0",
   },
   selectedOptionText: {
     color: "#fff",
   },
+  unselectedVotedText: {
+    color: "#666",
+  },
   optionText: {
-    color: "#007bff",
+    color: "#333",
     fontSize: wp("4%"),
+    flex: 1,
   },
   shareContainer: {
     flexDirection: "row",
@@ -509,16 +541,21 @@ const styles = StyleSheet.create({
     right: 10,
   },
 
-  actionIcons: {
+  pollActions: {
     flexDirection: "row",
-    position: "absolute",
-    top: 10,
-    right: 10,
+    alignItems: "center",
+    marginTop: hp("2%"),
+    justifyContent: "space-between",
+    paddingTop: hp("1%"),
+  },
+  likeButton: {
+    flexDirection: "row",
     alignItems: "center",
   },
-
-  iconSpacing: {
-    marginRight: 10,
+  likeCount: {
+    fontSize: wp("3.5%"),
+    color: "#8E8E93",
+    marginLeft: wp("1.5%"),
   },
  
 
@@ -621,21 +658,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
-  optionContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
   votePercentage: {
     fontSize: wp("3.5%"),
     marginLeft: 10,
-  },
-  selectedOption: {
-    backgroundColor: "#007bff",
-  },
- 
-  unselectedOptionText: {
-    color: "rgba(0, 123, 255, 0.8)",
+    fontWeight: "500",
   },
   modalContainer: {
     flex: 1,

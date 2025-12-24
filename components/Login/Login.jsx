@@ -18,7 +18,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 export default function Login({navigation}) {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   
@@ -157,7 +157,7 @@ export default function Login({navigation}) {
     setLoading(true); 
     try {
         const response = await axios.post(`${API_URL}/auth/login`, {
-            email,
+            username,
             password,
             rememberMe
         });
@@ -168,7 +168,7 @@ export default function Login({navigation}) {
             await AsyncStorage.setItem('userId', userId.toString());
             await AsyncStorage.setItem('email',email);
             
-            setEmail("");
+            setUsername("");
             setPassword("");
             navigation.navigate("Home", { userData: response.data });
         }
@@ -324,12 +324,11 @@ export default function Login({navigation}) {
           </Text>
         </TouchableOpacity>
 
-        <Text style={styles.label}>Email</Text>
+        <Text style={styles.label}>Username</Text>
         <TextInput 
-          style={styles.input} 
-          keyboardType="email-address"     
-          value={email}
-          onChangeText={setEmail}
+          style={styles.input}
+          value={username}
+          onChangeText={setUsername}
           autoCapitalize="none"
         />
 
